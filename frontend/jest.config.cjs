@@ -6,6 +6,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^../supabaseClient$': '<rootDir>/src/__mocks__/supabaseClient.ts',
   },
   testMatch: [
     '**/__tests__/**/*.(ts|tsx|js)',

@@ -15,7 +15,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userRole, setUserRole] = useState<'admin' | 'sales_rep' | null>(null)
   const [currentPage, setCurrentPage] = useState<'order' | 'clients' | 'admin'>('order')
-  const [currentUser, setCurrentUser] = useState<string>('')
+  const [currentUserName, setCurrentUserName] = useState<string>('')
 
   // Проверка размера экрана
   useEffect(() => {
@@ -41,7 +41,7 @@ function App() {
   const handleLogout = () => {
     setIsAuthenticated(false)
     setUserRole(null)
-    setCurrentUser('')
+    setCurrentUserName('')
     setCurrentPage('order')
     resetForm()
   }
@@ -89,8 +89,15 @@ function App() {
     
     // Временная логика для демонстрации - определяем роль по email
     let role: 'admin' | 'sales_rep' = 'sales_rep'
+    let userName = 'Пользователь'
+    
     if (email.includes('admin')) {
       role = 'admin'
+      userName = 'Администратор'
+    } else {
+      // Генерируем имя на основе email (часть до @)
+      const emailName = email.split('@')[0]
+      userName = emailName.charAt(0).toUpperCase() + emailName.slice(1)
     }
     
     // const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -98,10 +105,10 @@ function App() {
     //   setMessage('Ошибка входа: ' + error.message)
     //   return
     // }
-    // // Проверяем статус подтверждения
+    // // Проверяем статус подтверждения и получаем имя из профиля
     // const { data: profile, error: profileError } = await supabase
     //   .from('profiles')
-    //   .select('approved, role')
+    //   .select('approved, role, name')
     //   .eq('id', data.user.id)
     //   .single()
     // if (profileError) {
@@ -113,11 +120,12 @@ function App() {
     //   await supabase.auth.signOut()
     //   return
     // }
+    // userName = profile.name || userName
     
     setMessage('Вход выполнен успешно!')
     setUserRole(role)
     setIsAuthenticated(true)
-    setCurrentUser(email)
+    setCurrentUserName(userName)
     
     // Устанавливаем стартовую страницу в зависимости от роли
     if (role === 'admin') {
@@ -134,94 +142,139 @@ function App() {
   // Если пользователь аутентифицирован, показываем соответствующую страницу
   if (isAuthenticated) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f7fafc' }}>
+      <div style={{ 
+        minHeight: isMobile ? '100dvh' : '100vh', 
+        background: '#f7fafc'
+      }}>
         {/* Навигационная панель */}
         <nav style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          padding: '1rem 2rem',
+          padding: isMobile ? '0.75rem 1rem' : '1rem 2rem',
           color: 'white',
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+          alignItems: isMobile ? 'stretch' : 'center',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          gap: isMobile ? '0.75rem' : '0'
         }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+          <h1 style={{ 
+            fontSize: isMobile ? '1.25rem' : '1.5rem', 
+            fontWeight: 'bold',
+            margin: 0,
+            textAlign: isMobile ? 'center' : 'left'
+          }}>
             Форма заказа
           </h1>
           
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            {/* Информация о пользователе */}
-            <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>
-              {currentUser} ({userRole === 'admin' ? 'Администратор' : 'Торговый представитель'})
-            </span>
-            
-            {/* Кнопки навигации */}
-            {userRole === 'admin' && (
-              <button
-                onClick={() => setCurrentPage('admin')}
-                style={{
-                  background: currentPage === 'admin' ? 'rgba(255,255,255,0.3)' : 'transparent',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem'
-                }}
-              >
-                Админ-панель
-              </button>
+          {/* Информация о пользователе на мобильных */}
+          {isMobile && (
+            <div style={{ 
+              textAlign: 'center',
+              fontSize: '0.85rem',
+              opacity: 0.9,
+              paddingBottom: '0.5rem'
+            }}>
+              {currentUserName} ({userRole === 'admin' ? 'Администратор' : 'Торговый представитель'})
+            </div>
+          )}
+          
+          <div style={{ 
+            display: 'flex', 
+            gap: isMobile ? '0.5rem' : '1rem', 
+            alignItems: 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            width: isMobile ? '100%' : 'auto'
+          }}>
+            {/* Информация о пользователе на десктопе */}
+            {!isMobile && (
+              <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+                {currentUserName} ({userRole === 'admin' ? 'Администратор' : 'Торговый представитель'})
+              </span>
             )}
             
-            <button
-              onClick={() => setCurrentPage('order')}
-              style={{
-                background: currentPage === 'order' ? 'rgba(255,255,255,0.3)' : 'transparent',
-                border: '1px solid rgba(255,255,255,0.3)',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '0.9rem'
-              }}
-            >
-              Заказы
-            </button>
-            
-            <button
-              onClick={() => setCurrentPage('clients')}
-              style={{
-                background: currentPage === 'clients' ? 'rgba(255,255,255,0.3)' : 'transparent',
-                border: '1px solid rgba(255,255,255,0.3)',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '0.9rem'
-              }}
-            >
-              Клиенты
-            </button>
-            
-            <button
-              onClick={handleLogout}
-              style={{
-                background: '#dc3545',
-                border: 'none',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '0.9rem'
-              }}
-            >
-              Выйти
-            </button>
+            {/* Кнопки навигации */}
+            <div style={{
+              display: 'flex',
+              gap: isMobile ? '0.5rem' : '1rem',
+              flexDirection: isMobile ? 'column' : 'row',
+              width: isMobile ? '100%' : 'auto'
+            }}>
+              {userRole === 'admin' && (
+                <button
+                  onClick={() => setCurrentPage('admin')}
+                  style={{
+                    background: currentPage === 'admin' ? 'rgba(255,255,255,0.3)' : 'transparent',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    color: 'white',
+                    padding: isMobile ? '0.75rem' : '0.5rem 1rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: isMobile ? '0.95rem' : '0.9rem',
+                    width: isMobile ? '100%' : 'auto'
+                  }}
+                >
+                  Админ-панель
+                </button>
+              )}
+              
+              <button
+                onClick={() => setCurrentPage('order')}
+                style={{
+                  background: currentPage === 'order' ? 'rgba(255,255,255,0.3)' : 'transparent',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  padding: isMobile ? '0.75rem' : '0.5rem 1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? '0.95rem' : '0.9rem',
+                  width: isMobile ? '100%' : 'auto'
+                }}
+              >
+                Заказы
+              </button>
+              
+              <button
+                onClick={() => setCurrentPage('clients')}
+                style={{
+                  background: currentPage === 'clients' ? 'rgba(255,255,255,0.3)' : 'transparent',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  padding: isMobile ? '0.75rem' : '0.5rem 1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? '0.95rem' : '0.9rem',
+                  width: isMobile ? '100%' : 'auto'
+                }}
+              >
+                Клиенты
+              </button>
+              
+              <button
+                onClick={handleLogout}
+                style={{
+                  background: '#dc3545',
+                  border: 'none',
+                  color: 'white',
+                  padding: isMobile ? '0.75rem' : '0.5rem 1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? '0.95rem' : '0.9rem',
+                  width: isMobile ? '100%' : 'auto'
+                }}
+              >
+                Выйти
+              </button>
+            </div>
           </div>
         </nav>
 
         {/* Содержимое страницы */}
-        <main style={{ padding: '2rem' }}>
+        <main style={{ 
+          padding: isMobile ? '1rem' : '2rem',
+          maxWidth: '100%',
+          overflow: 'hidden'
+        }}>
           {currentPage === 'admin' && userRole === 'admin' && <AdminPage />}
           {currentPage === 'order' && <OrderPage />}
           {currentPage === 'clients' && <ClientsPage />}
