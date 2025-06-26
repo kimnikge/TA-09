@@ -27,11 +27,6 @@ const mockSession: Session = {
   expires_at: 0,
 }
 
-type SelectMock = {
-  eq: (field: string, value: string) => {
-    single: () => Promise<{ data: { approved: boolean }, error: null }>
-  }
-}
 
 jest.mock('../src/supabaseClient', () => {
   const originalModule = jest.requireActual('../src/supabaseClient')

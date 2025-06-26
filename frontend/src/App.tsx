@@ -271,7 +271,7 @@ function App() {
             zIndex: '1000',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px',
+            padding: isMobile ? '10px' : '20px',
             animation: 'fadeIn 0.3s ease'
           }}
           onClick={(e) => e.target === e.currentTarget && resetForm()}
@@ -280,10 +280,12 @@ function App() {
             className={`bg-white w-full relative modal-content-mobile ${isMobile ? 'modal-mobile' : ''}`}
             style={{
               background: 'white',
-              borderRadius: '20px',
-              padding: isMobile ? '30px 24px' : '40px',
-              maxWidth: '450px',
+              borderRadius: isMobile ? '16px' : '20px',
+              padding: isMobile ? '24px 16px' : '40px',
+              maxWidth: isMobile ? '95vw' : '450px',
               width: '100%',
+              maxHeight: isMobile ? '90vh' : 'auto',
+              overflowY: isMobile ? 'auto' : 'visible',
               boxShadow: '0 25px 50px rgba(0, 0, 0, 0.2)',
               transform: 'scale(0.9)',
               animation: 'modalSlide 0.3s ease forwards'
@@ -312,13 +314,13 @@ function App() {
               className="text-center"
               style={{
                 textAlign: 'center',
-                marginBottom: '30px'
+                marginBottom: isMobile ? '20px' : '30px'
               }}
             >
               <h2 
                 className="font-bold mb-2"
                 style={{
-                  fontSize: '1.8rem',
+                  fontSize: isMobile ? '1.5rem' : '1.8rem',
                   fontWeight: '700',
                   color: '#2d3748',
                   marginBottom: '8px'
@@ -329,7 +331,7 @@ function App() {
               <p 
                 style={{
                   color: '#718096',
-                  fontSize: '0.95rem'
+                  fontSize: isMobile ? '0.85rem' : '0.95rem'
                 }}
               >
                 {showModal === 'login' 
@@ -348,7 +350,7 @@ function App() {
                   handleRegister()
                 }
               }}>
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: isMobile ? '16px' : '20px' }}>
                 <label 
                   className="block font-semibold mb-2"
                   style={{
@@ -356,7 +358,7 @@ function App() {
                     marginBottom: '8px',
                     fontWeight: '600',
                     color: '#2d3748',
-                    fontSize: '0.9rem'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem'
                   }}
                 >
                   📧 Email адрес
@@ -368,10 +370,10 @@ function App() {
                   className="w-full transition-all duration-300"
                   style={{
                     width: '100%',
-                    padding: '16px',
+                    padding: isMobile ? '12px' : '16px',
                     border: '2px solid #e2e8f0',
-                    borderRadius: '12px',
-                    fontSize: '1rem',
+                    borderRadius: isMobile ? '8px' : '12px',
+                    fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                     background: '#f8fafc',
                     transition: 'all 0.3s ease'
                   }}
@@ -390,7 +392,7 @@ function App() {
                 />
               </div>
               
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: isMobile ? '16px' : '20px' }}>
                 <label 
                   className="block font-semibold mb-2"
                   style={{
@@ -398,7 +400,7 @@ function App() {
                     marginBottom: '8px',
                     fontWeight: '600',
                     color: '#2d3748',
-                    fontSize: '0.9rem'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem'
                   }}
                 >
                   🔒 Пароль
@@ -410,10 +412,10 @@ function App() {
                   className="w-full transition-all duration-300"
                   style={{
                     width: '100%',
-                    padding: '16px',
+                    padding: isMobile ? '12px' : '16px',
                     border: '2px solid #e2e8f0',
-                    borderRadius: '12px',
-                    fontSize: '1rem',
+                    borderRadius: isMobile ? '8px' : '12px',
+                    fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                     background: '#f8fafc',
                     transition: 'all 0.3s ease'
                   }}
@@ -433,7 +435,7 @@ function App() {
               </div>
               
               {showModal === 'register' && (
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: isMobile ? '16px' : '20px' }}>
                   <label 
                     className="block font-semibold mb-2"
                     style={{
@@ -441,7 +443,7 @@ function App() {
                       marginBottom: '8px',
                       fontWeight: '600',
                       color: '#2d3748',
-                      fontSize: '0.9rem'
+                      fontSize: isMobile ? '0.85rem' : '0.9rem'
                     }}
                   >
                     👤 Имя
@@ -453,10 +455,10 @@ function App() {
                     className="w-full transition-all duration-300"
                     style={{
                       width: '100%',
-                      padding: '16px',
+                      padding: isMobile ? '12px' : '16px',
                       border: '2px solid #e2e8f0',
-                      borderRadius: '12px',
-                      fontSize: '1rem',
+                      borderRadius: isMobile ? '8px' : '12px',
+                      fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                       background: '#f8fafc',
                       transition: 'all 0.3s ease'
                     }}
@@ -491,8 +493,9 @@ function App() {
                 className="flex gap-3"
                 style={{
                   display: 'flex',
-                  gap: '12px',
-                  marginTop: '30px'
+                  flexDirection: isMobile ? 'column' : 'row',
+                  gap: isMobile ? '8px' : '12px',
+                  marginTop: isMobile ? '20px' : '30px'
                 }}
               >
                 <button
@@ -500,15 +503,17 @@ function App() {
                   onClick={resetForm}
                   className="flex-1 font-semibold cursor-pointer transition-all duration-300"
                   style={{
-                    flex: '1',
-                    padding: '14px',
+                    flex: isMobile ? 'none' : '1',
+                    width: isMobile ? '100%' : 'auto',
+                    padding: isMobile ? '12px' : '14px',
                     border: '2px solid #e2e8f0',
-                    borderRadius: '12px',
+                    borderRadius: isMobile ? '8px' : '12px',
                     background: 'white',
                     color: '#718096',
                     fontWeight: '600',
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    fontSize: isMobile ? '0.9rem' : '1rem'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = '#cbd5e0';
@@ -525,16 +530,18 @@ function App() {
                   type="submit"
                   className="font-semibold cursor-pointer transition-all duration-300"
                   style={{
-                    flex: '2',
-                    padding: '14px',
+                    flex: isMobile ? 'none' : '2',
+                    width: isMobile ? '100%' : 'auto',
+                    padding: isMobile ? '12px' : '14px',
                     border: 'none',
-                    borderRadius: '12px',
+                    borderRadius: isMobile ? '8px' : '12px',
                     background: 'linear-gradient(135deg, #667eea, #764ba2)',
                     color: 'white',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                    fontSize: isMobile ? '0.9rem' : '1rem'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
