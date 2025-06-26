@@ -14,7 +14,6 @@ function App() {
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth <= 768
-      console.log('Screen width:', window.innerWidth, 'isMobile:', mobile)
       setIsMobile(mobile)
     }
     
@@ -163,11 +162,6 @@ function App() {
           Быстрое оформление заказов, управление клиентами и товарами.<br />
           Присоединяйтесь к платформе.
         </p>
-        
-        {/* Временная отладочная информация */}
-        <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-          Debug: Width: {typeof window !== 'undefined' ? window.innerWidth : 'undefined'}, isMobile: {isMobile.toString()}
-        </div>
         
         <div 
           className={isMobile ? 'buttons-mobile' : ''}
