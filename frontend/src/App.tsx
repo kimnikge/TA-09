@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import AdminPage from './pages/AdminPage'
+import OrderPage from './pages/OrderPage'
+import ClientsPage from './pages/ClientsPage'
 // import { supabase } from './supabaseClient'
 
 function App() {
@@ -9,6 +12,10 @@ function App() {
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
   const [isMobile, setIsMobile] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userRole, setUserRole] = useState<'admin' | 'sales_rep' | null>(null)
+  const [currentPage, setCurrentPage] = useState<'order' | 'clients' | 'admin'>('order')
+  const [currentUser, setCurrentUser] = useState<string>('')
 
   // Проверка размера экрана
   useEffect(() => {
@@ -29,6 +36,14 @@ function App() {
     setName('')
     setMessage('')
     setShowModal(null)
+  }
+
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setUserRole(null)
+    setCurrentUser('')
+    setCurrentPage('order')
+    resetForm()
   }
 
   // Обработка клавиши Escape и блокировка прокрутки
@@ -71,6 +86,13 @@ function App() {
       setMessage('Заполните все поля')
       return
     }
+    
+    // Временная логика для демонстрации - определяем роль по email
+    let role: 'admin' | 'sales_rep' = 'sales_rep'
+    if (email.includes('admin')) {
+      role = 'admin'
+    }
+    
     // const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     // if (error) {
     //   setMessage('Ошибка входа: ' + error.message)
@@ -79,7 +101,7 @@ function App() {
     // // Проверяем статус подтверждения
     // const { data: profile, error: profileError } = await supabase
     //   .from('profiles')
-    //   .select('approved')
+    //   .select('approved, role')
     //   .eq('id', data.user.id)
     //   .single()
     // if (profileError) {
@@ -91,11 +113,124 @@ function App() {
     //   await supabase.auth.signOut()
     //   return
     // }
+    
     setMessage('Вход выполнен успешно!')
-    setTimeout(resetForm, 1000)
-    // Здесь переход к основной части приложения
+    setUserRole(role)
+    setIsAuthenticated(true)
+    setCurrentUser(email)
+    
+    // Устанавливаем стартовую страницу в зависимости от роли
+    if (role === 'admin') {
+      setCurrentPage('admin')
+    } else {
+      setCurrentPage('order')
+    }
+    
+    setTimeout(() => {
+      resetForm()
+    }, 1000)
   }
 
+  // Если пользователь аутентифицирован, показываем соответствующую страницу
+  if (isAuthenticated) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f7fafc' }}>
+        {/* Навигационная панель */}
+        <nav style={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          padding: '1rem 2rem',
+          color: 'white',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+        }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+            Форма заказа
+          </h1>
+          
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {/* Информация о пользователе */}
+            <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+              {currentUser} ({userRole === 'admin' ? 'Администратор' : 'Торговый представитель'})
+            </span>
+            
+            {/* Кнопки навигации */}
+            {userRole === 'admin' && (
+              <button
+                onClick={() => setCurrentPage('admin')}
+                style={{
+                  background: currentPage === 'admin' ? 'rgba(255,255,255,0.3)' : 'transparent',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Админ-панель
+              </button>
+            )}
+            
+            <button
+              onClick={() => setCurrentPage('order')}
+              style={{
+                background: currentPage === 'order' ? 'rgba(255,255,255,0.3)' : 'transparent',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              Заказы
+            </button>
+            
+            <button
+              onClick={() => setCurrentPage('clients')}
+              style={{
+                background: currentPage === 'clients' ? 'rgba(255,255,255,0.3)' : 'transparent',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              Клиенты
+            </button>
+            
+            <button
+              onClick={handleLogout}
+              style={{
+                background: '#dc3545',
+                border: 'none',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              Выйти
+            </button>
+          </div>
+        </nav>
+
+        {/* Содержимое страницы */}
+        <main style={{ padding: '2rem' }}>
+          {currentPage === 'admin' && userRole === 'admin' && <AdminPage />}
+          {currentPage === 'order' && <OrderPage />}
+          {currentPage === 'clients' && <ClientsPage />}
+        </main>
+      </div>
+    )
+  }
+
+  // Страница входа/регистрации (если не аутентифицирован)
   return (
     <div 
       className="min-h-screen flex items-center justify-center main-container"
