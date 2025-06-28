@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import { supabase } from './supabaseClient'
 import AdminPage from './pages/AdminPage'
 import OrderPage from './pages/OrderPage'
 import ClientsPage from './pages/ClientsPage'
@@ -15,15 +16,47 @@ function App() {
   const [userRole, setUserRole] = useState<'admin' | 'sales_rep' | null>(null)
   const [currentPage, setCurrentPage] = useState<'order' | 'clients' | 'admin'>('order')
   const [currentUserName, setCurrentUserName] = useState<string>('')
+  const [isDemo, setIsDemo] = useState(false)
 
-  // Проверка размера экрана
+  // Проверка размера экрана и восстановление сессии
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth <= 768
       setIsMobile(mobile)
     }
     
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          // Временно отключаем проверку профиля до обновления структуры БД
+          // TODO: Включить после добавления колонок email, name, role в таблицу profiles
+          console.log('Пользователь найден в сессии:', session.user.email)
+          console.log('⚠️ Структура БД требует обновления для полной функциональности')
+          
+          // Пока используем email для определения роли (временное решение)
+          if (session.user.email?.includes('admin')) {
+            setIsAuthenticated(true)
+            setUserRole('admin')
+            setCurrentUserName('Администратор')
+            setCurrentPage('admin')
+          } else {
+            setIsAuthenticated(true)
+            setUserRole('sales_rep')
+            setCurrentUserName(session.user.email?.split('@')[0] || 'Пользователь')
+            setCurrentPage('order')
+          }
+        }
+      } catch (error) {
+        console.error('Auth check error:', error)
+        // Не блокируем приложение при ошибке аутентификации
+      }
+    }
+    
     checkMobile()
+    checkAuth()
+    
     window.addEventListener('resize', checkMobile)
     
     return () => window.removeEventListener('resize', checkMobile)
@@ -37,11 +70,17 @@ function App() {
     setShowModal(null)
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
     setIsAuthenticated(false)
     setUserRole(null)
     setCurrentUserName('')
     setCurrentPage('order')
+    setIsDemo(false)
     resetForm()
   }
 
@@ -71,13 +110,36 @@ function App() {
       setMessage('Заполните все поля')
       return
     }
-    // const { error } = await supabase.auth.signUp({ email, password })
-    // if (error) {
-    //   setMessage('Ошибка регистрации: ' + error.message)
-    // } else {
-      setMessage('Регистрация успешна!')
-      setTimeout(resetForm, 2000)
-    // }
+    
+    try {
+      // Регистрируем пользователя через Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password.trim(),
+        options: {
+          data: {
+            name: name.trim()
+          }
+        }
+      })
+      
+      if (authError) {
+        setMessage('Ошибка регистрации: ' + authError.message)
+        return
+      }
+      
+      if (authData.user) {
+        // Временно не создаем профиль до обновления структуры БД
+        // TODO: Включить после добавления колонок в таблицу profiles
+        console.log('Пользователь зарегистрирован:', authData.user.email)
+        
+        setMessage('Регистрация успешна! Войдите с теми же данными.')
+        setTimeout(resetForm, 3000)
+      }
+    } catch (error) {
+      setMessage('Произошла ошибка при регистрации')
+      console.error('Registration error:', error)
+    }
   }
 
   const handleLogin = async () => {
@@ -86,60 +148,47 @@ function App() {
       return
     }
     
-    // Временная логика для демонстрации - определяем роль по email
-    let role: 'admin' | 'sales_rep' = 'sales_rep'
-    let userName = 'Пользователь'
-    
-    if (email.includes('admin')) {
-      role = 'admin'
-      userName = 'Администратор'
-    } else {
-      // Генерируем имя на основе email (часть до @)
-      const emailName = email.split('@')[0]
-      userName = emailName.charAt(0).toUpperCase() + emailName.slice(1)
+    try {
+      // Авторизуемся через Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim()
+      })
+      
+      if (authError) {
+        setMessage('Ошибка входа: ' + authError.message)
+        return
+      }
+      
+      if (authData.user) {
+        // Временно используем простую логику до обновления БД
+        // TODO: Включить проверку профиля после обновления структуры БД
+        console.log('Пользователь вошел:', authData.user.email)
+        
+        setMessage('Вход выполнен успешно!')
+        
+        // Определяем роль по email (временное решение)
+        if (authData.user.email?.includes('admin')) {
+          setUserRole('admin')
+          setCurrentUserName('Администратор')
+          setCurrentPage('admin')
+        } else {
+          setUserRole('sales_rep')
+          setCurrentUserName(authData.user.email?.split('@')[0] || 'Пользователь')
+          setCurrentPage('order')
+        }
+        
+        setIsAuthenticated(true)
+        setTimeout(resetForm, 1000)
+      }
+    } catch (error) {
+      setMessage('Произошла ошибка при входе')
+      console.error('Login error:', error)
     }
-    
-    // const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    // if (error) {
-    //   setMessage('Ошибка входа: ' + error.message)
-    //   return
-    // }
-    // // Проверяем статус подтверждения и получаем имя из профиля
-    // const { data: profile, error: profileError } = await supabase
-    //   .from('profiles')
-    //   .select('approved, role, name')
-    //   .eq('id', data.user.id)
-    //   .single()
-    // if (profileError) {
-    //   setMessage('Ошибка проверки статуса: ' + profileError.message)
-    //   return
-    // }
-    // if (!profile?.approved) {
-    //   setMessage('Ваша регистрация ещё не подтверждена администратором.')
-    //   await supabase.auth.signOut()
-    //   return
-    // }
-    // userName = profile.name || userName
-    
-    setMessage('Вход выполнен успешно!')
-    setUserRole(role)
-    setIsAuthenticated(true)
-    setCurrentUserName(userName)
-    
-    // Устанавливаем стартовую страницу в зависимости от роли
-    if (role === 'admin') {
-      setCurrentPage('admin')
-    } else {
-      setCurrentPage('order')
-    }
-    
-    setTimeout(() => {
-      resetForm()
-    }, 1000)
   }
 
   // Если пользователь аутентифицирован, показываем соответствующую страницу
-  if (isAuthenticated) {
+  if (isAuthenticated || isDemo) {
     return (
       <div style={{ 
         minHeight: isMobile ? '100dvh' : '100vh', 
@@ -347,7 +396,7 @@ function App() {
           }}
         >
           Быстрое оформление заказов, управление клиентами и товарами.<br />
-          Присоединяйтесь к платформе.
+          Присоединяйтесь к платформе или попробуйте демо версию.
         </p>
         
         <div 
@@ -432,6 +481,51 @@ function App() {
             onClick={() => setShowModal('register')}
           >
             ✨ Зарегистрироваться
+          </button>
+          
+          {/* Временная демо кнопка */}
+          <button
+            className={isMobile ? 'button-mobile' : ''}
+            style={{
+              flex: isMobile ? 'none' : '1',
+              width: isMobile ? '100%' : 'auto',
+              padding: '16px 24px',
+              borderRadius: '12px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (!isMobile) {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 25px rgba(240, 147, 251, 0.6)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isMobile) {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(240, 147, 251, 0.4)';
+              }
+            }}
+            onClick={() => {
+              setIsAuthenticated(true);
+              setUserRole('sales_rep');
+              setCurrentUserName('kimnikge');
+              setCurrentPage('order');
+              setIsDemo(true);
+              console.log('Демо доступ активирован, переход на страницу заказов');
+            }}
+          >
+            🚀 Демо доступ
           </button>
         </div>
       </div>
@@ -556,6 +650,7 @@ function App() {
                     borderRadius: isMobile ? '8px' : '12px',
                     fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                     background: '#f8fafc',
+                    color: '#2d3748', // Цвет текста
                     transition: 'all 0.3s ease'
                   }}
                   onFocus={(e) => {
@@ -598,6 +693,7 @@ function App() {
                     borderRadius: isMobile ? '8px' : '12px',
                     fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                     background: '#f8fafc',
+                    color: '#2d3748', // Цвет текста
                     transition: 'all 0.3s ease'
                   }}
                   onFocus={(e) => {
@@ -641,6 +737,7 @@ function App() {
                       borderRadius: isMobile ? '8px' : '12px',
                       fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                       background: '#f8fafc',
+                      color: '#2d3748', // Цвет текста
                       transition: 'all 0.3s ease'
                     }}
                     onFocus={(e) => {

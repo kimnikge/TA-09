@@ -1,41 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Package, ShoppingCart, BarChart3, Settings, FileText, 
-  Plus, Edit, Trash2, UserX, CheckCircle, Clock
+  Plus, Edit, Trash2, CheckCircle, Clock, UserX
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
-// --- ДЕМО-ТИП и ДЕМО-ДАННЫЕ временно закомментированы для возврата к предыдущей версии ---
-// type DemoUser = {
-//   id: string;
-//   name: string;
-//   email: string;
-//   role: 'admin' | 'sales_rep';
-//   status: 'active' | 'pending' | 'inactive';
-//   lastActive: string;
-//   orders: number;
-// };
-//
-// const [users, setUsers] = useState<DemoUser[]>([]);
-//
-// const loadUsers = async () => {
-//   try {
-//     setLoading(true);
-//     setUsers([
-//       { id: '1', name: 'Алексей Петров', email: 'alexey@example.com', role: 'sales_rep', status: 'active', lastActive: '2024-06-28', orders: 45 },
-//       { id: '2', name: 'Мария Сидорова', email: 'maria@example.com', role: 'sales_rep', status: 'pending', lastActive: '2024-06-27', orders: 32 },
-//       { id: '3', name: 'Дмитрий Козлов', email: 'dmitry@example.com', role: 'sales_rep', status: 'inactive', lastActive: '2024-06-25', orders: 12 }
-//     ]);
-//   } catch (error) {
-//     setMessage('Ошибка загрузки пользователей: ' + (error as Error).message);
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-// --- КОНЕЦ ДЕМО-БЛОКА ---
+// Временный тип для демо-данных
+type DemoUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'sales_rep';
+  status: 'active' | 'pending' | 'inactive';
+  lastActive: string;
+  orders: number;
+};
 
 const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [users, setUsers] = useState<DemoUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -48,7 +31,7 @@ const AdminPage: React.FC = () => {
     { id: 'users', label: 'Пользователи', icon: Users },
     { id: 'products', label: 'Товары', icon: Package },
     { id: 'orders', label: 'Заказы', icon: ShoppingCart },
-    { id: 'clients', label: 'Клиенты', icon: UserX },
+    { id: 'clients', label: 'Клиенты', icon: Users },
     { id: 'reports', label: 'Отчеты', icon: FileText },
     { id: 'settings', label: 'Настройки', icon: Settings },
   ];
@@ -56,36 +39,17 @@ const AdminPage: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      
-      // Временные данные для демонстрации
+      // Демо-данные для показа интерфейса
       setUsers([
         { id: '1', name: 'Алексей Петров', email: 'alexey@example.com', role: 'sales_rep', status: 'active', lastActive: '2024-06-28', orders: 45 },
         { id: '2', name: 'Мария Сидорова', email: 'maria@example.com', role: 'sales_rep', status: 'pending', lastActive: '2024-06-27', orders: 32 },
         { id: '3', name: 'Дмитрий Козлов', email: 'dmitry@example.com', role: 'sales_rep', status: 'inactive', lastActive: '2024-06-25', orders: 12 }
       ]);
-      
     } catch (error) {
       setMessage('Ошибка загрузки пользователей: ' + (error as Error).message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const approveUser = async () => {
-    try {
-      // Временно отключено до обновления структуры БД
-      console.log('⚠️ Управление пользователями отключено - требуется обновление структуры БД');
-      setMessage('Функция временно недоступна - требуется обновление БД');
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
-      setMessage('Ошибка подтверждения: ' + (error as Error).message);
-    }
-  };
-
-  const rejectUser = async (userId: string) => {
-    // Временно отключено
-    setMessage('Функция временно недоступна - требуется обновление БД');
-    setTimeout(() => setMessage(''), 3000);
   };
 
   const blockUser = async (userId: string) => {
@@ -247,12 +211,14 @@ const AdminPage: React.FC = () => {
                           setShowModal(true);
                         }}
                         className="text-blue-600 hover:text-blue-800"
+                        title="Редактировать"
                       >
                         <Edit className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => blockUser(user.id)}
                         className="text-red-600 hover:text-red-800"
+                        title="Заблокировать"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -294,9 +260,39 @@ const AdminPage: React.FC = () => {
         return (
           <div className={`fixed inset-0 z-50 overflow-y-auto ${showModal ? '' : 'hidden'}`}>
             <div className="flex items-center justify-center min-h-screen">
-              <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+              <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
                 <h3 className="text-lg font-semibold mb-4">Добавить пользователя</h3>
-                {/* ...форма добавления пользователя... */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Имя
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Введите имя пользователя"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="example@company.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Роль
+                    </label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      <option value="sales_rep">Торговый представитель</option>
+                      <option value="admin">Администратор</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setShowModal(false)}
@@ -322,9 +318,44 @@ const AdminPage: React.FC = () => {
         return (
           <div className={`fixed inset-0 z-50 overflow-y-auto ${showModal ? '' : 'hidden'}`}>
             <div className="flex items-center justify-center min-h-screen">
-              <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+              <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
                 <h3 className="text-lg font-semibold mb-4">Редактировать пользователя</h3>
-                {/* ...форма редактирования пользователя... */}
+                {selectedItem && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Имя
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue={selectedItem.name}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        defaultValue={selectedItem.email}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Роль
+                      </label>
+                      <select 
+                        defaultValue={selectedItem.role}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="sales_rep">Торговый представитель</option>
+                        <option value="admin">Администратор</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setShowModal(false)}
