@@ -289,14 +289,10 @@ function App() {
       style={{ 
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-        padding: isMobile ? '10px' : '20px',
-        minHeight: isMobile ? '100dvh' : '100vh', // Динамическая высота viewport для мобильных
+        padding: isMobile ? '16px' : '20px',
+        minHeight: isMobile ? '100dvh' : '100vh',
         width: '100%',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        boxSizing: 'border-box',
         overflow: 'auto'
       }}
     >
@@ -305,11 +301,13 @@ function App() {
         style={{
           background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(20px)',
-          borderRadius: '24px',
-          padding: isMobile ? '40px 24px' : '60px 40px',
+          borderRadius: isMobile ? '16px' : '24px',
+          padding: isMobile ? '24px 16px' : '60px 40px',
           boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-          maxWidth: '500px',
-          width: '100%'
+          maxWidth: isMobile ? '100%' : '500px',
+          width: '100%',
+          margin: '0 auto',
+          boxSizing: 'border-box'
         }}
         onMouseEnter={(e) => {
           if (!isMobile) {
@@ -325,14 +323,15 @@ function App() {
         <h1 
           className={`font-bold mb-4 main-title ${isMobile ? 'title-mobile' : ''}`}
           style={{
-            fontSize: isMobile ? '2rem' : '2.5rem',
+            fontSize: isMobile ? '1.75rem' : '2.5rem',
             fontWeight: '700',
             color: '#2d3748',
-            marginBottom: '16px',
+            marginBottom: isMobile ? '12px' : '16px',
             background: 'linear-gradient(135deg, #667eea, #764ba2)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
+            backgroundClip: 'text',
+            lineHeight: '1.2'
           }}
         >
           Форма заказа
@@ -340,14 +339,17 @@ function App() {
         <p 
           className="leading-relaxed"
           style={{
-            fontSize: '1.1rem',
+            fontSize: isMobile ? '0.95rem' : '1.1rem',
             color: '#718096',
-            marginBottom: '40px',
-            lineHeight: '1.6'
+            marginBottom: isMobile ? '24px' : '40px',
+            lineHeight: '1.6',
+            padding: isMobile ? '0 8px' : '0'
           }}
         >
-          Быстрое оформление заказов, управление клиентами и товарами.<br />
-          Присоединяйтесь к платформе.
+          {isMobile 
+            ? 'Быстрое оформление заказов, управление клиентами и товарами. Присоединяйтесь к платформе.'
+            : <>Быстрое оформление заказов, управление клиентами и товарами.<br />Присоединяйтесь к платформе.</>
+          }
         </p>
         
         <div 
@@ -355,8 +357,8 @@ function App() {
           style={{
             display: 'flex',
             flexDirection: isMobile ? 'column' : 'row',
-            gap: '16px',
-            marginBottom: '40px',
+            gap: isMobile ? '12px' : '16px',
+            marginBottom: isMobile ? '24px' : '40px',
             width: '100%'
           }}
         >
@@ -364,11 +366,11 @@ function App() {
             className={isMobile ? 'button-mobile' : ''}
             style={{
               flex: isMobile ? 'none' : '1',
-              width: isMobile ? '100%' : 'auto',
-              padding: '16px 24px',
+              width: '100%',
+              padding: isMobile ? '14px 20px' : '16px 24px',
               border: 'none',
-              borderRadius: '12px',
-              fontSize: '1rem',
+              borderRadius: isMobile ? '10px' : '12px',
+              fontSize: isMobile ? '1rem' : '1rem',
               fontWeight: '600',
               textDecoration: 'none',
               display: 'flex',
@@ -379,7 +381,9 @@ function App() {
               color: 'white',
               boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
               cursor: 'pointer',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              boxSizing: 'border-box',
+              minHeight: isMobile ? '48px' : 'auto'
             }}
             onMouseEnter={(e) => {
               if (!isMobile) {
@@ -401,10 +405,10 @@ function App() {
             className={isMobile ? 'button-mobile' : ''}
             style={{
               flex: isMobile ? 'none' : '1',
-              width: isMobile ? '100%' : 'auto',
-              padding: '16px 24px',
-              borderRadius: '12px',
-              fontSize: '1rem',
+              width: '100%',
+              padding: isMobile ? '14px 20px' : '16px 24px',
+              borderRadius: isMobile ? '10px' : '12px',
+              fontSize: isMobile ? '1rem' : '1rem',
               fontWeight: '600',
               textDecoration: 'none',
               display: 'flex',
@@ -415,7 +419,9 @@ function App() {
               color: '#667eea',
               border: '2px solid rgba(102, 126, 234, 0.2)',
               cursor: 'pointer',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              boxSizing: 'border-box',
+              minHeight: isMobile ? '48px' : 'auto'
             }}
             onMouseEnter={(e) => {
               if (!isMobile) {

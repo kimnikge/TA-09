@@ -34,8 +34,30 @@ input:focus {
   overflow-x: hidden !important;
 }
 
+/* Стили для главной страницы */
+.main-container {
+  box-sizing: border-box !important;
+}
+
+.container-main {
+  box-sizing: border-box !important;
+}
+
 /* Принудительные стили для адаптивности */
 @media (max-width: 768px) {
+  /* Главная страница */
+  .main-container {
+    padding: 16px !important;
+    box-sizing: border-box !important;
+  }
+  
+  .container-main {
+    max-width: 100% !important;
+    padding: 24px 16px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
   .buttons-mobile {
     flex-direction: column !important;
   }
