@@ -289,10 +289,14 @@ function App() {
       style={{ 
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-        padding: isMobile ? '16px' : '20px',
-        minHeight: isMobile ? '100dvh' : '100vh',
+        padding: isMobile ? '10px' : '20px',
+        minHeight: isMobile ? '100dvh' : '100vh', // Динамическая высота viewport для мобильных
         width: '100%',
-        boxSizing: 'border-box',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         overflow: 'auto'
       }}
     >
@@ -301,13 +305,11 @@ function App() {
         style={{
           background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(20px)',
-          borderRadius: isMobile ? '16px' : '24px',
-          padding: isMobile ? '24px 16px' : '60px 40px',
+          borderRadius: '24px',
+          padding: isMobile ? '40px 24px' : '60px 40px',
           boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-          maxWidth: isMobile ? '100%' : '500px',
-          width: '100%',
-          margin: '0 auto',
-          boxSizing: 'border-box'
+          maxWidth: '500px',
+          width: '100%'
         }}
         onMouseEnter={(e) => {
           if (!isMobile) {
@@ -323,15 +325,14 @@ function App() {
         <h1 
           className={`font-bold mb-4 main-title ${isMobile ? 'title-mobile' : ''}`}
           style={{
-            fontSize: isMobile ? '1.75rem' : '2.5rem',
+            fontSize: isMobile ? '2rem' : '2.5rem',
             fontWeight: '700',
             color: '#2d3748',
-            marginBottom: isMobile ? '12px' : '16px',
+            marginBottom: '16px',
             background: 'linear-gradient(135deg, #667eea, #764ba2)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            lineHeight: '1.2'
+            backgroundClip: 'text'
           }}
         >
           Форма заказа
@@ -339,17 +340,14 @@ function App() {
         <p 
           className="leading-relaxed"
           style={{
-            fontSize: isMobile ? '0.95rem' : '1.1rem',
+            fontSize: '1.1rem',
             color: '#718096',
-            marginBottom: isMobile ? '24px' : '40px',
-            lineHeight: '1.6',
-            padding: isMobile ? '0 8px' : '0'
+            marginBottom: '40px',
+            lineHeight: '1.6'
           }}
         >
-          {isMobile 
-            ? 'Быстрое оформление заказов, управление клиентами и товарами. Присоединяйтесь к платформе.'
-            : <>Быстрое оформление заказов, управление клиентами и товарами.<br />Присоединяйтесь к платформе.</>
-          }
+          Быстрое оформление заказов, управление клиентами и товарами.<br />
+          Присоединяйтесь к платформе.
         </p>
         
         <div 
@@ -357,8 +355,8 @@ function App() {
           style={{
             display: 'flex',
             flexDirection: isMobile ? 'column' : 'row',
-            gap: isMobile ? '12px' : '16px',
-            marginBottom: isMobile ? '24px' : '40px',
+            gap: '16px',
+            marginBottom: '40px',
             width: '100%'
           }}
         >
@@ -366,11 +364,11 @@ function App() {
             className={isMobile ? 'button-mobile' : ''}
             style={{
               flex: isMobile ? 'none' : '1',
-              width: '100%',
-              padding: isMobile ? '14px 20px' : '16px 24px',
+              width: isMobile ? '100%' : 'auto',
+              padding: '16px 24px',
               border: 'none',
-              borderRadius: isMobile ? '10px' : '12px',
-              fontSize: isMobile ? '1rem' : '1rem',
+              borderRadius: '12px',
+              fontSize: '1rem',
               fontWeight: '600',
               textDecoration: 'none',
               display: 'flex',
@@ -381,9 +379,7 @@ function App() {
               color: 'white',
               boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
               cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxSizing: 'border-box',
-              minHeight: isMobile ? '48px' : 'auto'
+              transition: 'all 0.3s ease'
             }}
             onMouseEnter={(e) => {
               if (!isMobile) {
@@ -405,10 +401,10 @@ function App() {
             className={isMobile ? 'button-mobile' : ''}
             style={{
               flex: isMobile ? 'none' : '1',
-              width: '100%',
-              padding: isMobile ? '14px 20px' : '16px 24px',
-              borderRadius: isMobile ? '10px' : '12px',
-              fontSize: isMobile ? '1rem' : '1rem',
+              width: isMobile ? '100%' : 'auto',
+              padding: '16px 24px',
+              borderRadius: '12px',
+              fontSize: '1rem',
               fontWeight: '600',
               textDecoration: 'none',
               display: 'flex',
@@ -419,9 +415,7 @@ function App() {
               color: '#667eea',
               border: '2px solid rgba(102, 126, 234, 0.2)',
               cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxSizing: 'border-box',
-              minHeight: isMobile ? '48px' : 'auto'
+              transition: 'all 0.3s ease'
             }}
             onMouseEnter={(e) => {
               if (!isMobile) {
@@ -458,9 +452,8 @@ function App() {
             zIndex: '1000',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: isMobile ? '16px' : '20px',
-            animation: 'fadeIn 0.3s ease',
-            boxSizing: 'border-box'
+            padding: isMobile ? '10px' : '20px',
+            animation: 'fadeIn 0.3s ease'
           }}
           onClick={(e) => e.target === e.currentTarget && resetForm()}
         >
@@ -468,15 +461,13 @@ function App() {
             className={`bg-white w-full relative modal-content-mobile ${isMobile ? 'modal-mobile' : ''}`}
             style={{
               background: 'white',
-              borderRadius: isMobile ? '12px' : '20px',
-              padding: isMobile ? '20px 16px' : '40px',
-              maxWidth: isMobile ? '100%' : '450px',
-              width: isMobile ? '100%' : 'auto',
-              maxHeight: isMobile ? '95vh' : 'auto',
+              borderRadius: isMobile ? '16px' : '20px',
+              padding: isMobile ? '24px 16px' : '40px',
+              maxWidth: isMobile ? '95vw' : '450px',
+              width: '100%',
+              maxHeight: isMobile ? '90vh' : 'auto',
               overflowY: isMobile ? 'auto' : 'visible',
               boxShadow: '0 25px 50px rgba(0, 0, 0, 0.2)',
-              boxSizing: 'border-box',
-              margin: isMobile ? '0' : 'auto',
               transform: 'scale(0.9)',
               animation: 'modalSlide 0.3s ease forwards'
             }}
@@ -560,14 +551,12 @@ function App() {
                   className="w-full transition-all duration-300"
                   style={{
                     width: '100%',
-                    padding: isMobile ? '14px 16px' : '16px',
+                    padding: isMobile ? '12px' : '16px',
                     border: '2px solid #e2e8f0',
-                    borderRadius: isMobile ? '10px' : '12px',
+                    borderRadius: isMobile ? '8px' : '12px',
                     fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                     background: '#f8fafc',
-                    transition: 'all 0.3s ease',
-                    boxSizing: 'border-box',
-                    minHeight: isMobile ? '48px' : 'auto'
+                    transition: 'all 0.3s ease'
                   }}
                   onFocus={(e) => {
                     e.target.style.outline = 'none';
@@ -604,14 +593,12 @@ function App() {
                   className="w-full transition-all duration-300"
                   style={{
                     width: '100%',
-                    padding: isMobile ? '14px 16px' : '16px',
+                    padding: isMobile ? '12px' : '16px',
                     border: '2px solid #e2e8f0',
-                    borderRadius: isMobile ? '10px' : '12px',
+                    borderRadius: isMobile ? '8px' : '12px',
                     fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                     background: '#f8fafc',
-                    transition: 'all 0.3s ease',
-                    boxSizing: 'border-box',
-                    minHeight: isMobile ? '48px' : 'auto'
+                    transition: 'all 0.3s ease'
                   }}
                   onFocus={(e) => {
                     e.target.style.outline = 'none';
@@ -649,14 +636,12 @@ function App() {
                     className="w-full transition-all duration-300"
                     style={{
                       width: '100%',
-                      padding: isMobile ? '14px 16px' : '16px',
+                      padding: isMobile ? '12px' : '16px',
                       border: '2px solid #e2e8f0',
-                      borderRadius: isMobile ? '10px' : '12px',
+                      borderRadius: isMobile ? '8px' : '12px',
                       fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                       background: '#f8fafc',
-                      transition: 'all 0.3s ease',
-                      boxSizing: 'border-box',
-                      minHeight: isMobile ? '48px' : 'auto'
+                      transition: 'all 0.3s ease'
                     }}
                     onFocus={(e) => {
                       e.target.style.outline = 'none';
@@ -700,30 +685,24 @@ function App() {
                   className="flex-1 font-semibold cursor-pointer transition-all duration-300"
                   style={{
                     flex: isMobile ? 'none' : '1',
-                    width: '100%',
-                    padding: isMobile ? '14px 16px' : '14px',
+                    width: isMobile ? '100%' : 'auto',
+                    padding: isMobile ? '12px' : '14px',
                     border: '2px solid #e2e8f0',
-                    borderRadius: isMobile ? '10px' : '12px',
+                    borderRadius: isMobile ? '8px' : '12px',
                     background: 'white',
                     color: '#718096',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    fontSize: isMobile ? '1rem' : '1rem',
-                    boxSizing: 'border-box',
-                    minHeight: isMobile ? '48px' : 'auto'
+                    fontSize: isMobile ? '0.9rem' : '1rem'
                   }}
                   onMouseEnter={(e) => {
-                    if (!isMobile) {
-                      e.currentTarget.style.borderColor = '#cbd5e0';
-                      e.currentTarget.style.background = '#f8fafc';
-                    }
+                    e.currentTarget.style.borderColor = '#cbd5e0';
+                    e.currentTarget.style.background = '#f8fafc';
                   }}
                   onMouseLeave={(e) => {
-                    if (!isMobile) {
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                      e.currentTarget.style.background = 'white';
-                    }
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.background = 'white';
                   }}
                 >
                   Отмена
@@ -733,31 +712,25 @@ function App() {
                   className="font-semibold cursor-pointer transition-all duration-300"
                   style={{
                     flex: isMobile ? 'none' : '2',
-                    width: '100%',
-                    padding: isMobile ? '14px 16px' : '14px',
+                    width: isMobile ? '100%' : 'auto',
+                    padding: isMobile ? '12px' : '14px',
                     border: 'none',
-                    borderRadius: isMobile ? '10px' : '12px',
+                    borderRadius: isMobile ? '8px' : '12px',
                     background: 'linear-gradient(135deg, #667eea, #764ba2)',
                     color: 'white',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
                     boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-                    fontSize: isMobile ? '1rem' : '1rem',
-                    boxSizing: 'border-box',
-                    minHeight: isMobile ? '48px' : 'auto'
+                    fontSize: isMobile ? '0.9rem' : '1rem'
                   }}
                   onMouseEnter={(e) => {
-                    if (!isMobile) {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.6)';
-                    }
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.6)';
                   }}
                   onMouseLeave={(e) => {
-                    if (!isMobile) {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
-                    }
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
                   }}
                 >
                   {showModal === 'login' ? '🔑 Войти' : '✨ Создать аккаунт'}
