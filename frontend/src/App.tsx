@@ -3,7 +3,6 @@ import './App.css'
 import AdminPage from './pages/AdminPage'
 import OrderPage from './pages/OrderPage'
 import ClientsPage from './pages/ClientsPage'
-// import { supabase } from './supabaseClient'
 
 function App() {
   const [showModal, setShowModal] = useState<'login' | 'register' | null>(null)
