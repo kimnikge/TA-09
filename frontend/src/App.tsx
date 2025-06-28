@@ -452,8 +452,9 @@ function App() {
             zIndex: '1000',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: isMobile ? '10px' : '20px',
-            animation: 'fadeIn 0.3s ease'
+            padding: isMobile ? '16px' : '20px',
+            animation: 'fadeIn 0.3s ease',
+            boxSizing: 'border-box'
           }}
           onClick={(e) => e.target === e.currentTarget && resetForm()}
         >
@@ -461,13 +462,15 @@ function App() {
             className={`bg-white w-full relative modal-content-mobile ${isMobile ? 'modal-mobile' : ''}`}
             style={{
               background: 'white',
-              borderRadius: isMobile ? '16px' : '20px',
-              padding: isMobile ? '24px 16px' : '40px',
-              maxWidth: isMobile ? '95vw' : '450px',
-              width: '100%',
-              maxHeight: isMobile ? '90vh' : 'auto',
+              borderRadius: isMobile ? '12px' : '20px',
+              padding: isMobile ? '20px 16px' : '40px',
+              maxWidth: isMobile ? '100%' : '450px',
+              width: isMobile ? '100%' : 'auto',
+              maxHeight: isMobile ? '95vh' : 'auto',
               overflowY: isMobile ? 'auto' : 'visible',
               boxShadow: '0 25px 50px rgba(0, 0, 0, 0.2)',
+              boxSizing: 'border-box',
+              margin: isMobile ? '0' : 'auto',
               transform: 'scale(0.9)',
               animation: 'modalSlide 0.3s ease forwards'
             }}
@@ -551,12 +554,14 @@ function App() {
                   className="w-full transition-all duration-300"
                   style={{
                     width: '100%',
-                    padding: isMobile ? '12px' : '16px',
+                    padding: isMobile ? '14px 16px' : '16px',
                     border: '2px solid #e2e8f0',
-                    borderRadius: isMobile ? '8px' : '12px',
+                    borderRadius: isMobile ? '10px' : '12px',
                     fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                     background: '#f8fafc',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    boxSizing: 'border-box',
+                    minHeight: isMobile ? '48px' : 'auto'
                   }}
                   onFocus={(e) => {
                     e.target.style.outline = 'none';
@@ -593,12 +598,14 @@ function App() {
                   className="w-full transition-all duration-300"
                   style={{
                     width: '100%',
-                    padding: isMobile ? '12px' : '16px',
+                    padding: isMobile ? '14px 16px' : '16px',
                     border: '2px solid #e2e8f0',
-                    borderRadius: isMobile ? '8px' : '12px',
+                    borderRadius: isMobile ? '10px' : '12px',
                     fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                     background: '#f8fafc',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    boxSizing: 'border-box',
+                    minHeight: isMobile ? '48px' : 'auto'
                   }}
                   onFocus={(e) => {
                     e.target.style.outline = 'none';
@@ -636,12 +643,14 @@ function App() {
                     className="w-full transition-all duration-300"
                     style={{
                       width: '100%',
-                      padding: isMobile ? '12px' : '16px',
+                      padding: isMobile ? '14px 16px' : '16px',
                       border: '2px solid #e2e8f0',
-                      borderRadius: isMobile ? '8px' : '12px',
+                      borderRadius: isMobile ? '10px' : '12px',
                       fontSize: isMobile ? '16px' : '1rem', // 16px предотвращает зум на iOS
                       background: '#f8fafc',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      boxSizing: 'border-box',
+                      minHeight: isMobile ? '48px' : 'auto'
                     }}
                     onFocus={(e) => {
                       e.target.style.outline = 'none';
@@ -685,24 +694,30 @@ function App() {
                   className="flex-1 font-semibold cursor-pointer transition-all duration-300"
                   style={{
                     flex: isMobile ? 'none' : '1',
-                    width: isMobile ? '100%' : 'auto',
-                    padding: isMobile ? '12px' : '14px',
+                    width: '100%',
+                    padding: isMobile ? '14px 16px' : '14px',
                     border: '2px solid #e2e8f0',
-                    borderRadius: isMobile ? '8px' : '12px',
+                    borderRadius: isMobile ? '10px' : '12px',
                     background: 'white',
                     color: '#718096',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    fontSize: isMobile ? '0.9rem' : '1rem'
+                    fontSize: isMobile ? '1rem' : '1rem',
+                    boxSizing: 'border-box',
+                    minHeight: isMobile ? '48px' : 'auto'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#cbd5e0';
-                    e.currentTarget.style.background = '#f8fafc';
+                    if (!isMobile) {
+                      e.currentTarget.style.borderColor = '#cbd5e0';
+                      e.currentTarget.style.background = '#f8fafc';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                    e.currentTarget.style.background = 'white';
+                    if (!isMobile) {
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                      e.currentTarget.style.background = 'white';
+                    }
                   }}
                 >
                   Отмена
@@ -712,25 +727,31 @@ function App() {
                   className="font-semibold cursor-pointer transition-all duration-300"
                   style={{
                     flex: isMobile ? 'none' : '2',
-                    width: isMobile ? '100%' : 'auto',
-                    padding: isMobile ? '12px' : '14px',
+                    width: '100%',
+                    padding: isMobile ? '14px 16px' : '14px',
                     border: 'none',
-                    borderRadius: isMobile ? '8px' : '12px',
+                    borderRadius: isMobile ? '10px' : '12px',
                     background: 'linear-gradient(135deg, #667eea, #764ba2)',
                     color: 'white',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
                     boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-                    fontSize: isMobile ? '0.9rem' : '1rem'
+                    fontSize: isMobile ? '1rem' : '1rem',
+                    boxSizing: 'border-box',
+                    minHeight: isMobile ? '48px' : 'auto'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.6)';
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.6)';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+                    }
                   }}
                 >
                   {showModal === 'login' ? '🔑 Войти' : '✨ Создать аккаунт'}

@@ -29,6 +29,11 @@ input:focus {
   outline: none !important;
 }
 
+/* Стили для модальных окон */
+.modal-content-mobile {
+  overflow-x: hidden !important;
+}
+
 /* Принудительные стили для адаптивности */
 @media (max-width: 768px) {
   .buttons-mobile {
@@ -73,6 +78,28 @@ input:focus {
     width: 100% !important;
     padding: 12px !important;
     font-size: 0.9rem !important;
+  }
+  
+  /* Модальные окна */
+  .modal-content-mobile {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Поля ввода */
+  .modal-content-mobile input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 48px !important;
+  }
+  
+  /* Кнопки */
+  .modal-content-mobile button {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 48px !important;
   }
   
   body {
