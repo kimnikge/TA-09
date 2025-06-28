@@ -20,9 +20,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-
-    "types": ["jest", "node"]
+    "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "__tests__"]
+  "include": ["src"]
 }
