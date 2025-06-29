@@ -16,6 +16,7 @@ function App() {
   const [userRole, setUserRole] = useState<'admin' | 'sales_rep' | null>(null)
   const [currentPage, setCurrentPage] = useState<'order' | 'clients' | 'admin'>('order')
   const [currentUserName, setCurrentUserName] = useState<string>('')
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>('')
 
   // Функция для назначения роли админа (для разработки)
   const makeAdmin = async (email: string) => {
@@ -94,6 +95,9 @@ function App() {
         
         if (session?.user) {
           console.log('Пользователь найден в сессии:', session.user.email)
+          
+          // Сохраняем email пользователя
+          setCurrentUserEmail(session.user.email || '')
           
           // Проверяем роль пользователя в таблице profiles
           const { data: profile, error } = await supabase
@@ -255,6 +259,9 @@ function App() {
         
         setMessage('Вход выполнен успешно!')
         
+        // Сохраняем email пользователя
+        setCurrentUserEmail(authData.user.email || '')
+        
         // Определяем роль по email (временное решение)
         if (authData.user.email?.includes('admin')) {
           setUserRole('admin')
@@ -412,7 +419,14 @@ function App() {
           overflow: 'hidden'
         }}>
           {currentPage === 'admin' && userRole === 'admin' && <AdminPage />}
-          {currentPage === 'order' && <OrderPage />}
+          {currentPage === 'order' && (
+            <OrderPage 
+              currentUser={{
+                name: currentUserName,
+                email: currentUserEmail
+              }}
+            />
+          )}
           {currentPage === 'clients' && <ClientsPage />}
         </main>
       </div>

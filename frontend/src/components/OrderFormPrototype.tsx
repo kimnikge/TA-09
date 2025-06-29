@@ -22,12 +22,19 @@ interface ProductsData {
   [category: string]: Product[];
 }
 
-const OrderFormPrototype = () => {
-  // Имитация авторизованного торгового агента
+interface OrderFormProps {
+  currentUser: {
+    name: string;
+    email: string;
+  };
+}
+
+const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser }) => {
+  // Используем реальные данные пользователя
   const currentAgent = {
     id: 'agent_001',
-    name: 'Амир Назарбаев',
-    email: 'amir.nazarbayev@company.kz'
+    name: currentUser.name,
+    email: currentUser.email
   };
 
   const [selectedClient, setSelectedClient] = useState<string>('');
@@ -175,7 +182,8 @@ const OrderFormPrototype = () => {
       setSubmitStatus('success');
       setCart({});
       setComments({});
-    } catch (e: any) {
+    } catch (error) {
+      console.error('Ошибка отправки заказа:', error);
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
