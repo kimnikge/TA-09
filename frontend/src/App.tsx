@@ -26,23 +26,16 @@ function App() {
     // Получить текущего пользователя и его роль
     const getUserAndRole = async (currentUser: User | null) => {
       if (currentUser) {
-        console.log('🔍 Проверяем роль пользователя:', currentUser.email)
-        
         // Проверить роль пользователя в таблице profiles
-        const { data: profile, error } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', currentUser.id)
           .single()
         
-        console.log('📊 Данные профиля:', profile)
-        console.log('❌ Ошибка получения профиля:', error)
-        
         if (profile?.role === 'admin') {
-          console.log('✅ Пользователь - админ')
           setUserRole('admin')
         } else {
-          console.log('👤 Пользователь - торговый агент')
           setUserRole('sales_rep')
         }
       } else {
@@ -71,6 +64,7 @@ function App() {
   }, [])
 
   const currentUser = {
+    id: user?.id || '',
     name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Пользователь',
     email: user?.email || ''
   }
@@ -258,12 +252,9 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-700">
-                <div>{currentUser.name}</div>
-                <div className="text-xs text-gray-500">
-                  Роль: {userRole === 'admin' ? '👑 Админ' : '👤 Торг.агент'} | ID: {user?.id?.slice(0, 8)}...
-                </div>
-              </div>
+              <span className="text-sm text-gray-700">
+                {currentUser.name}
+              </span>
               <button
                 onClick={handleLogout}
                 className="flex items-center text-sm text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-50"

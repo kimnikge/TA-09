@@ -3,34 +3,36 @@ import { ShoppingCart, Plus, Minus, User, Calendar, Package, Send, Eye, X } from
 import { supabase } from '../supabaseClient';
 
 interface Product {
-  id: number;
+  id: string; // UUID в Supabase
   name: string;
   price: number;
-  unit: string;
+  unit: string | null;
   category: string;
-  image?: string;
+  image_url?: string | null;
+  active?: boolean;
 }
 
 interface Client {
-  id: number;
+  id: string; // UUID в Supabase
   name: string;
   address: string;
-  phone?: string;
-  email?: string;
-  company?: string;
-  seller?: string;
+  company_name?: string | null;
+  seller_name?: string | null;
+  created_by?: string | null;
+  created_at?: string;
 }
 
 interface Cart {
-  [productId: number]: number;
+  [productId: string]: number;
 }
 
 interface Comments {
-  [productId: number]: string;
+  [productId: string]: string;
 }
 
 interface OrderFormProps {
   currentUser: {
+    id: string;
     name: string;
     email: string;
   };
@@ -40,7 +42,7 @@ interface OrderFormProps {
 const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole }) => {
   // Используем реальные данные пользователя
   const currentAgent = {
-    id: 'agent_001',
+    id: currentUser.id,
     name: currentUser.name,
     email: currentUser.email
   };
@@ -151,7 +153,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
     return categoryNames[categoryId] || categoryId;
   };
 
-  const updateQuantity = (productId: number, change: number) => {
+  const updateQuantity = (productId: string, change: number) => {
     setCart(prev => {
       const newCart = { ...prev };
       const currentQty = newCart[productId] || 0;
@@ -167,7 +169,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
     });
   };
 
-  const setQuantityDirectly = (productId: number, value: string) => {
+  const setQuantityDirectly = (productId: string, value: string) => {
     const qty = parseInt(value) || 0;
     setCart(prev => {
       const newCart = { ...prev };
@@ -184,32 +186,44 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
 
   const addNewClient = () => {
     if (newClient.name && newClient.company) {
-      const newId = clients.length + 1;
-      clients.push({
+      const newId = crypto.randomUUID(); // Генерируем UUID как в Supabase
+      const newClientData: Client = {
         id: newId,
         name: newClient.name,
-        company: newClient.company,
-        seller: newClient.seller,
+        company_name: newClient.company,
+        seller_name: newClient.seller,
         address: newClient.address
-      });
-      setSelectedClient(newId.toString());
+      };
+      
+      clients.push(newClientData);
+      setSelectedClient(newId);
       setShowNewClientModal(false);
       setNewClient({ name: '', company: '', seller: '', address: '' });
     }
   };
 
   const handleSubmitOrder = async () => {
-    if (!selectedClient || Object.keys(cart).length === 0) return;
+    if (!selectedClient || Object.keys(cart).length === 0) {
+      alert('Выберите клиента и добавьте товары в заказ');
+      return;
+    }
+    
+    if (!currentAgent.id) {
+      alert('Ошибка: не удалось определить пользователя');
+      return;
+    }
+    
     setIsSubmitting(true);
     setSubmitStatus(null);
+    
     try {
       // 1. Создать заказ
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert([
           {
-            rep_id: currentAgent.id, // В реальном проекте — id пользователя
-            client_id: selectedClient,
+            rep_id: currentAgent.id,
+            client_id: selectedClient, // UUID строка, не число
             delivery_date: deliveryDate,
             total_items: getTotalItems(),
             total_price: getTotalPrice(),
@@ -217,27 +231,51 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
         ])
         .select()
         .single();
-      if (orderError || !order) throw orderError || new Error('Ошибка создания заказа');
+
+      if (orderError) {
+        console.error('❌ Ошибка создания заказа:', orderError);
+        throw new Error(`Ошибка создания заказа: ${orderError.message}`);
+      }
+      
+      if (!order) {
+        throw new Error('Заказ не был создан');
+      }
+
       // 2. Добавить позиции заказа
       const items = Object.entries(cart).map(([productId, qty]) => {
-        const product = Object.values(products).flat().find(p => p.id === parseInt(productId));
+        const product = products.find(p => p.id === productId);
+        if (!product) {
+          throw new Error(`Товар с ID ${productId} не найден`);
+        }
+        
         return {
           order_id: order.id,
           product_id: productId,
           quantity: qty,
-          price: product?.price || 0,
-          unit: product?.unit || '',
-          comment: comments[parseInt(productId)] || ''
+          price: product.price,
+          unit: product.unit || 'шт',
+          comment: comments[productId] || ''
         };
       });
+
       const { error: itemsError } = await supabase.from('order_items').insert(items);
-      if (itemsError) throw itemsError;
+      
+      if (itemsError) {
+        console.error('❌ Ошибка добавления позиций:', itemsError);
+        // Попытаться удалить созданный заказ
+        await supabase.from('orders').delete().eq('id', order.id);
+        throw new Error(`Ошибка добавления позиций: ${itemsError.message}`);
+      }
+
       setSubmitStatus('success');
       setCart({});
       setComments({});
+      
     } catch (error) {
-      console.error('Ошибка отправки заказа:', error);
+      console.error('❌ Ошибка отправки заказа:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
       setSubmitStatus('error');
+      alert(`Ошибка отправки заказа: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -249,13 +287,13 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
 
   const getTotalPrice = (): number => {
     return Object.entries(cart).reduce((sum: number, [productId, qty]: [string, number]) => {
-      const product = products.find(p => p.id === parseInt(productId));
+      const product = products.find(p => p.id === productId);
       return sum + (product ? product.price * qty : 0);
     }, 0);
   };
 
   const currentProducts: Product[] = products.filter(p => p.category === selectedCategory);
-  const selectedClientData = clients.find(c => c.id === parseInt(selectedClient));
+  const selectedClientData = clients.find(c => c.id === selectedClient);
 
   // Показываем загрузку
   if (loading) {
@@ -316,7 +354,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                     <option value="">Выберите клиента...</option>
                     {clients.map(client => (
                       <option key={client.id} value={client.id}>
-                        {client.name} - {client.company}
+                        {client.name} - {client.company_name || 'Не указано'}
                       </option>
                     ))}
                   </select>
@@ -333,8 +371,8 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 {selectedClientData && (
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="font-semibold text-gray-800">{selectedClientData.name}</h3>
-                    <p className="text-sm text-gray-600">{selectedClientData.company}</p>
-                    <p className="text-sm text-gray-600">Продавец: {selectedClientData.seller}</p>
+                    <p className="text-sm text-gray-600">{selectedClientData.company_name || 'Компания не указана'}</p>
+                    <p className="text-sm text-gray-600">Продавец: {selectedClientData.seller_name || 'Не указан'}</p>
                     <p className="text-sm text-gray-600">Адрес: {selectedClientData.address}</p>
                   </div>
                 )}
@@ -387,11 +425,11 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                     <div className="flex items-start gap-4">
                       <div className="relative">
                         <img 
-                          src={product.image} 
+                          src={product.image_url || '/default-product.png'} 
                           alt={product.name}
                           className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80"
                           onClick={() => {
-                            setSelectedImage(product.image || '');
+                            setSelectedImage(product.image_url || '');
                             setShowImageModal(true);
                           }}
                         />
@@ -400,7 +438,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                       
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-800 mb-1">{product.name}</h3>
-                        <p className="text-blue-600 font-bold mb-2">{product.price} ₸ / {product.unit}</p>
+                        <p className="text-blue-600 font-bold mb-2">{product.price} ₸ / {product.unit || 'шт'}</p>
                         
                         <div className="flex items-center gap-2 mb-2">
                           <button 
@@ -454,7 +492,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm font-semibold">{selectedClientData.name}</p>
                   <p className="text-xs text-gray-600">{selectedClientData.address}</p>
-                  <p className="text-xs text-gray-600">Продавец: {selectedClientData.seller}</p>
+                  <p className="text-xs text-gray-600">Продавец: {selectedClientData.seller_name || 'Не указан'}</p>
                 </div>
               )}
 
@@ -489,7 +527,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                     {/* Строки товаров */}
                     <div className="max-h-48 overflow-y-auto">
                       {Object.entries(cart).map(([productId, qty]) => {
-                        const product = Object.values(products).flat().find(p => p.id === parseInt(productId));
+                        const product = products.find(p => p.id === productId);
                         if (!product) return null;
                         
                         const itemTotal = product.price * qty;
@@ -500,7 +538,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                               {product.name}
                             </div>
                             <div className="col-span-2 text-center">
-                              {qty} {product.unit}
+                              {qty} {product.unit || 'шт'}
                             </div>
                             <div className="col-span-2 text-right">
                               {product.price.toLocaleString()} ₸
