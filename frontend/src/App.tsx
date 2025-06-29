@@ -14,37 +14,57 @@ function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<'admin' | 'sales_rep'>('sales_rep')
+  
+  // Состояния для формы авторизации
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
+  const [authError, setAuthError] = useState('')
 
   useEffect(() => {
+    // Получить текущего пользователя и его роль
+    const getUserAndRole = async (currentUser: User | null) => {
+      if (currentUser) {
+        console.log('🔍 Проверяем роль пользователя:', currentUser.email)
+        
+        // Проверить роль пользователя в таблице profiles
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', currentUser.id)
+          .single()
+        
+        console.log('📊 Данные профиля:', profile)
+        console.log('❌ Ошибка получения профиля:', error)
+        
+        if (profile?.role === 'admin') {
+          console.log('✅ Пользователь - админ')
+          setUserRole('admin')
+        } else {
+          console.log('👤 Пользователь - торговый агент')
+          setUserRole('sales_rep')
+        }
+      } else {
+        setUserRole('sales_rep')
+      }
+    }
+
     // Получить текущего пользователя
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
-      
-      if (user) {
-        // Проверить роль пользователя в таблице profiles
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-        
-        if (profile?.role === 'admin') {
-          setUserRole('admin')
-        }
-      }
-      
+      await getUserAndRole(user)
       setLoading(false)
     }
 
     getUser()
 
     // Слушать изменения авторизации
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (!session?.user) {
-        setUserRole('sales_rep')
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      await getUserAndRole(currentUser)
     })
 
     return () => subscription.unsubscribe()
@@ -58,6 +78,32 @@ function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setCurrentPage('order')
+  }
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthLoading(true)
+    setAuthError('')
+
+    try {
+      if (authMode === 'signin') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (error) throw error
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        })
+        if (error) throw error
+      }
+    } catch (error: unknown) {
+      setAuthError(error instanceof Error ? error.message : 'Произошла ошибка')
+    } finally {
+      setAuthLoading(false)
+    }
   }
 
   if (loading) {
@@ -74,20 +120,85 @@ function App() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
-          <Package className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Система управления заказами
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Войдите в систему с помощью вашего email и пароля
-          </p>
-          <button
-            onClick={() => window.location.href = `${window.location.origin}/auth`}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Перейти к авторизации
-          </button>
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <div className="text-center mb-6">
+            <Package className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Система управления заказами
+            </h1>
+            <p className="text-gray-600">
+              {authMode === 'signin' ? 'Войдите в систему' : 'Создайте аккаунт'}
+            </p>
+          </div>
+
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="your@email.com"
+                required
+                disabled={authLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Пароль
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Введите пароль"
+                required
+                disabled={authLoading}
+                minLength={6}
+              />
+            </div>
+
+            {authError && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600">{authError}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {authLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {authMode === 'signin' ? 'Вход...' : 'Регистрация...'}
+                </div>
+              ) : (
+                authMode === 'signin' ? 'Войти' : 'Зарегистрироваться'
+              )}
+            </button>
+          </form>
+
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => {
+                setAuthMode(authMode === 'signin' ? 'signup' : 'signin')
+                setAuthError('')
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              {authMode === 'signin' 
+                ? 'Нет аккаунта? Зарегистрироваться'
+                : 'Уже есть аккаунт? Войти'
+              }
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -147,9 +258,12 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                {currentUser.name}
-              </span>
+              <div className="text-sm text-gray-700">
+                <div>{currentUser.name}</div>
+                <div className="text-xs text-gray-500">
+                  Роль: {userRole === 'admin' ? '👑 Админ' : '👤 Торг.агент'} | ID: {user?.id?.slice(0, 8)}...
+                </div>
+              </div>
               <button
                 onClick={handleLogout}
                 className="flex items-center text-sm text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-50"
