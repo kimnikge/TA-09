@@ -16,34 +16,111 @@ function App() {
     const [userRole, setUserRole] = useState(null);
     const [currentPage, setCurrentPage] = useState('order');
     const [currentUserName, setCurrentUserName] = useState('');
-    const [isDemo, setIsDemo] = useState(false);
+    // Функция для назначения роли админа (для разработки)
+    const makeAdmin = async (email) => {
+        try {
+            const { data: user } = await supabase.auth.admin.listUsers();
+            const targetUser = user.users.find(u => u.email === email);
+            if (!targetUser) {
+                console.error('Пользователь не найден:', email);
+                return false;
+            }
+            const { error } = await supabase
+                .from('profiles')
+                .update({ role: 'admin' })
+                .eq('id', targetUser.id);
+            if (error) {
+                console.error('Ошибка назначения роли админа:', error);
+                return false;
+            }
+            console.log('Роль админа назначена пользователю:', email);
+            return true;
+        }
+        catch (error) {
+            console.error('Ошибка:', error);
+            return false;
+        }
+    };
+    // Быстрая функция для назначения себя админом (только для разработки)
+    const makeMeAdmin = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) {
+                console.error('Пользователь не авторизован');
+                return;
+            }
+            const { error } = await supabase
+                .from('profiles')
+                .update({ role: 'admin' })
+                .eq('id', session.user.id);
+            if (error) {
+                console.error('Ошибка назначения роли админа:', error);
+                return;
+            }
+            console.log('Вы назначены админом!');
+            // Перезагружаем данные пользователя
+            window.location.reload();
+        }
+        catch (error) {
+            console.error('Ошибка:', error);
+        }
+    };
     // Проверка размера экрана и восстановление сессии
     useEffect(() => {
         const checkMobile = () => {
             const mobile = window.innerWidth <= 768;
             setIsMobile(mobile);
         };
+        window.makeAdmin = makeAdmin;
+        window.makeMeAdmin = makeMeAdmin;
+        console.log('🔧 Функции для управления ролями доступны:');
+        console.log('- makeAdmin("email@example.com") - назначить админа по email');
+        console.log('- makeMeAdmin() - назначить себя админом');
         const checkAuth = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session?.user) {
-                    // Временно отключаем проверку профиля до обновления структуры БД
-                    // TODO: Включить после добавления колонок email, name, role в таблицу profiles
                     console.log('Пользователь найден в сессии:', session.user.email);
-                    console.log('⚠️ Структура БД требует обновления для полной функциональности');
-                    // Пока используем email для определения роли (временное решение)
-                    if (session.user.email?.includes('admin')) {
-                        setIsAuthenticated(true);
-                        setUserRole('admin');
-                        setCurrentUserName('Администратор');
-                        setCurrentPage('admin');
+                    // Проверяем роль пользователя в таблице profiles
+                    const { data: profile, error } = await supabase
+                        .from('profiles')
+                        .select('role, name')
+                        .eq('id', session.user.id)
+                        .single();
+                    if (error) {
+                        console.log('Профиль не найден, создаем новый');
+                        // Если профиль не найден, создаем его с ролью sales_rep по умолчанию
+                        const { data: newProfile, error: createError } = await supabase
+                            .from('profiles')
+                            .insert({
+                            id: session.user.id,
+                            email: session.user.email,
+                            name: session.user.email?.split('@')[0] || 'Пользователь',
+                            role: 'sales_rep',
+                            approved: true
+                        })
+                            .select('role, name')
+                            .single();
+                        if (createError) {
+                            console.error('Ошибка создания профиля:', createError);
+                            // Fallback логика по email
+                            const isAdmin = session.user.email?.includes('admin') ||
+                                session.user.email === 'kimnikge@gmail.com';
+                            setUserRole(isAdmin ? 'admin' : 'sales_rep');
+                            setCurrentUserName(session.user.email?.split('@')[0] || 'Пользователь');
+                        }
+                        else {
+                            setUserRole(newProfile?.role || 'sales_rep');
+                            setCurrentUserName(newProfile?.name || 'Пользователь');
+                        }
                     }
                     else {
-                        setIsAuthenticated(true);
-                        setUserRole('sales_rep');
-                        setCurrentUserName(session.user.email?.split('@')[0] || 'Пользователь');
-                        setCurrentPage('order');
+                        // Профиль найден, используем данные из БД
+                        setUserRole(profile.role);
+                        setCurrentUserName(profile.name || session.user.email?.split('@')[0] || 'Пользователь');
                     }
+                    setIsAuthenticated(true);
+                    setCurrentPage(profile?.role === 'admin' ? 'admin' : 'order');
                 }
             }
             catch (error) {
@@ -74,7 +151,6 @@ function App() {
         setUserRole(null);
         setCurrentUserName('');
         setCurrentPage('order');
-        setIsDemo(false);
         resetForm();
     };
     // Обработка клавиши Escape и блокировка прокрутки
@@ -170,7 +246,7 @@ function App() {
         }
     };
     // Если пользователь аутентифицирован, показываем соответствующую страницу
-    if (isAuthenticated || isDemo) {
+    if (isAuthenticated) {
         return (_jsxs("div", { style: {
                 minHeight: isMobile ? '100dvh' : '100vh',
                 background: '#f7fafc'
@@ -290,7 +366,7 @@ function App() {
                             color: '#718096',
                             marginBottom: '40px',
                             lineHeight: '1.6'
-                        }, children: ["\u0411\u044B\u0441\u0442\u0440\u043E\u0435 \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u0437\u0430\u043A\u0430\u0437\u043E\u0432, \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043A\u043B\u0438\u0435\u043D\u0442\u0430\u043C\u0438 \u0438 \u0442\u043E\u0432\u0430\u0440\u0430\u043C\u0438.", _jsx("br", {}), "\u041F\u0440\u0438\u0441\u043E\u0435\u0434\u0438\u043D\u044F\u0439\u0442\u0435\u0441\u044C \u043A \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0435 \u0438\u043B\u0438 \u043F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u0434\u0435\u043C\u043E \u0432\u0435\u0440\u0441\u0438\u044E."] }), _jsxs("div", { className: isMobile ? 'buttons-mobile' : '', style: {
+                        }, children: ["\u0411\u044B\u0441\u0442\u0440\u043E\u0435 \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u0437\u0430\u043A\u0430\u0437\u043E\u0432, \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043A\u043B\u0438\u0435\u043D\u0442\u0430\u043C\u0438 \u0438 \u0442\u043E\u0432\u0430\u0440\u0430\u043C\u0438.", _jsx("br", {}), "\u041F\u0440\u0438\u0441\u043E\u0435\u0434\u0438\u043D\u044F\u0439\u0442\u0435\u0441\u044C \u043A \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0435 \u0434\u043B\u044F \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044F \u0437\u0430\u043A\u0430\u0437\u0430\u043C\u0438."] }), _jsxs("div", { className: isMobile ? 'buttons-mobile' : '', style: {
                             display: 'flex',
                             flexDirection: isMobile ? 'column' : 'row',
                             gap: '16px',
@@ -351,41 +427,7 @@ function App() {
                                         e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
                                         e.currentTarget.style.transform = 'translateY(0)';
                                     }
-                                }, onClick: () => setShowModal('register'), children: "\u2728 \u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F" }), _jsx("button", { className: isMobile ? 'button-mobile' : '', style: {
-                                    flex: isMobile ? 'none' : '1',
-                                    width: isMobile ? '100%' : 'auto',
-                                    padding: '16px 24px',
-                                    borderRadius: '12px',
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
-                                    textDecoration: 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                                    color: 'white',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease'
-                                }, onMouseEnter: (e) => {
-                                    if (!isMobile) {
-                                        e.currentTarget.style.transform = 'translateY(-2px)';
-                                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(240, 147, 251, 0.6)';
-                                    }
-                                }, onMouseLeave: (e) => {
-                                    if (!isMobile) {
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(240, 147, 251, 0.4)';
-                                    }
-                                }, onClick: () => {
-                                    setIsAuthenticated(true);
-                                    setUserRole('sales_rep');
-                                    setCurrentUserName('kimnikge');
-                                    setCurrentPage('order');
-                                    setIsDemo(true);
-                                    console.log('Демо доступ активирован, переход на страницу заказов');
-                                }, children: "\uD83D\uDE80 \u0414\u0435\u043C\u043E \u0434\u043E\u0441\u0442\u0443\u043F" })] })] }), showModal && (_jsx("div", { className: "fixed inset-0 flex items-center justify-center z-50", style: {
+                                }, onClick: () => setShowModal('register'), children: "\u2728 \u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F" })] })] }), showModal && (_jsx("div", { className: "fixed inset-0 flex items-center justify-center z-50", style: {
                     display: 'flex',
                     position: 'fixed',
                     top: '0',
