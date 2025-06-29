@@ -12,7 +12,8 @@
     "test": "jest",
     "check-db": "tsx scripts/checkDatabase.ts",
     "check-tables": "tsx scripts/checkTableStructure.ts",
-    "test-registration": "tsx scripts/testRegistration.ts"
+    "test-registration": "tsx scripts/testRegistration.ts",
+    "clean": "find src -name '*.js' -o -name '*.d.ts' | grep -v vite-env.d.ts | xargs rm -f && rm -rf node_modules/.tmp dist"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.2",
@@ -39,6 +40,7 @@
     "jest": "^30.0.3",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.1",
+    "terser": "^5.43.1",
     "ts-jest": "^29.4.0",
     "tsx": "^4.20.3",
     "typescript": "~5.8.3",

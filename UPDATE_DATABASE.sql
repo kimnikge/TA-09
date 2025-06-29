@@ -35,30 +35,39 @@ CREATE TRIGGER update_profiles_updated_at
 
 -- Таблица клиентов
 CREATE TABLE IF NOT EXISTS clients (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
+  company TEXT,
+  seller TEXT,
   phone TEXT,
-  address TEXT,
+  email TEXT,
+  address TEXT NOT NULL,
   created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Таблица товаров
 CREATE TABLE IF NOT EXISTS products (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'other',
   price DECIMAL(10,2) NOT NULL,
+  unit TEXT NOT NULL DEFAULT 'шт',
   description TEXT,
+  image TEXT,
+  stock_quantity INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Таблица заказов
 CREATE TABLE IF NOT EXISTS orders (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
-  sales_rep_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
-  status TEXT CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')) NOT NULL DEFAULT 'pending',
+  id SERIAL PRIMARY KEY,
+  client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE,
+  agent_name TEXT NOT NULL,
   total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  order_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  delivery_date DATE NOT NULL,
+  status TEXT CHECK (status IN ('pending', 'confirmed', 'delivered', 'cancelled')) NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -133,11 +142,34 @@ CREATE POLICY "Users can view order items" ON order_items FOR SELECT USING (
   )
 );
 
--- 10. Добавление тестовых данных (если таблица products пустая)
-INSERT INTO products (name, price, description)
-SELECT 'Товар ' || i, i * 100, 'Описание товара ' || i
-FROM generate_series(1, 6) AS i
-WHERE NOT EXISTS (SELECT 1 FROM products LIMIT 1);
+-- 10. Добавление тестовых данных
+
+-- Тестовые товары
+INSERT INTO products (name, category, price, unit, description) VALUES
+('Coca-Cola 0.5L', 'beverages', 150, 'шт', 'Газированный напиток'),
+('Pepsi 0.5L', 'beverages', 140, 'шт', 'Газированный напиток'),
+('Fanta 0.5L', 'beverages', 130, 'шт', 'Газированный напиток'),
+('Sprite 0.5L', 'beverages', 130, 'шт', 'Газированный напиток'),
+('Чипсы Lays классические', 'snacks', 320, 'пачка', 'Картофельные чипсы'),
+('Чипсы Pringles', 'snacks', 450, 'банка', 'Картофельные чипсы'),
+('Сухарики Кириешки', 'snacks', 180, 'пачка', 'Ржаные сухарики'),
+('Молоко 2.5% 1L', 'dairy', 250, 'пак', 'Пастеризованное молоко'),
+('Творог 9%', 'dairy', 380, 'пачка', 'Творог жирный'),
+('Сметана 20%', 'dairy', 300, 'банка', 'Сметана'),
+('Йогурт питьевой', 'dairy', 120, 'бут', 'Питьевой йогурт'),
+('Хлеб белый', 'bakery', 80, 'шт', 'Хлеб пшеничный'),
+('Хлеб черный', 'bakery', 90, 'шт', 'Хлеб ржаной'),
+('Порошок стиральный', 'household', 1200, 'пачка', 'Стиральный порошок'),
+('Средство для посуды', 'household', 280, 'бут', 'Моющее средство')
+ON CONFLICT DO NOTHING;
+
+-- Тестовые клиенты
+INSERT INTO clients (name, company, seller, address, phone, email) VALUES
+('Магазин "Евразия"', 'ТОО "Торговый дом"', 'Алия Смагулова', 'ул. Абая, 125', '+7 701 123 45 67', 'evraziya@mail.kz'),
+('Супермаркет "Народный"', 'ИП Касымов А.Б.', 'Бахыт Касымов', 'мкр. Жетысу-1, д. 45', '+7 702 234 56 78', 'narodniy@gmail.com'),
+('Минимаркет "Береке"', 'ТОО "Береке-Трейд"', 'Сауле Абишева', 'ул. Назарбаева, 78', '+7 705 345 67 89', 'bereke@mail.ru'),
+('Магазин "Продукты"', 'ИП Иванов И.И.', 'Иван Иванов', 'пр. Достык, 200', '+7 707 456 78 90', 'produkty@inbox.ru')
+ON CONFLICT DO NOTHING;
 
 -- 11. Проверка результата
 SELECT 

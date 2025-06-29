@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, User, Calendar, Package, Send, Eye, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
@@ -7,7 +7,18 @@ interface Product {
   name: string;
   price: number;
   unit: string;
-  image: string;
+  category: string;
+  image?: string;
+}
+
+interface Client {
+  id: number;
+  name: string;
+  address: string;
+  phone?: string;
+  email?: string;
+  company?: string;
+  seller?: string;
 }
 
 interface Cart {
@@ -16,10 +27,6 @@ interface Cart {
 
 interface Comments {
   [productId: number]: string;
-}
-
-interface ProductsData {
-  [category: string]: Product[];
 }
 
 interface OrderFormProps {
@@ -37,6 +44,13 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
     name: currentUser.name,
     email: currentUser.email
   };
+
+  // Стейты для данных из Supabase
+  const [clients, setClients] = useState<Client[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [deliveryDate, setDeliveryDate] = useState<string>(() => {
@@ -64,39 +78,77 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
 
-  // Демо-данные
-  const clients = [
-    { id: 1, name: 'Магазин "Евразия"', company: 'ТОО "Торговый дом"', seller: 'Алия Смагулова', address: 'ул. Абая, 125' },
-    { id: 2, name: 'Супермаркет "Народный"', company: 'ИП Касымов А.Б.', seller: 'Бахыт Касымов', address: 'мкр. Жетысу-1, д. 45' },
-    { id: 3, name: 'Минимаркет "Береке"', company: 'ТОО "Береке-Трейд"', seller: 'Сауле Абишева', address: 'ул. Назарбаева, 78' }
-  ];
+  // Загрузка данных из Supabase
+  useEffect(() => {
+    const loadDataOnMount = async () => {
+      try {
+        setLoading(true);
+        setLoadingMessage('Загрузка данных...');
 
-  const categories = [
-    { id: 'beverages', name: 'Напитки' },
-    { id: 'snacks', name: 'Снеки' },
-    { id: 'dairy', name: 'Молочные продукты' },
-    { id: 'household', name: 'Бытовая химия' }
-  ];
+        // Загружаем клиентов
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('clients')
+          .select('*')
+          .order('name');
 
-  const products: ProductsData = {
-    beverages: [
-      { id: 1, name: 'Lipton Black Tea', price: 450, unit: 'упак', image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=200&h=200&fit=crop' },
-      { id: 2, name: 'Nescafe Classic', price: 1200, unit: 'банка', image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=200&fit=crop' },
-      { id: 3, name: 'Coca-Cola 0.5л', price: 280, unit: 'шт', image: 'https://images.unsplash.com/photo-1561758033-48d52648ae8b?w=200&h=200&fit=crop' },
-      { id: 4, name: 'Минеральная вода Ессентуки', price: 150, unit: 'бут', image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop' }
-    ],
-    snacks: [
-      { id: 5, name: 'Чипсы Lay\'s', price: 320, unit: 'упак', image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=200&h=200&fit=crop' },
-      { id: 6, name: 'Орехи миндаль', price: 800, unit: 'кг', image: 'https://images.unsplash.com/photo-1508747703725-719777637510?w=200&h=200&fit=crop' }
-    ],
-    dairy: [
-      { id: 7, name: 'Молоко Иркит 1л', price: 250, unit: 'упак', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=200&h=200&fit=crop' },
-      { id: 8, name: 'Творог 5%', price: 450, unit: 'упак', image: 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=200&h=200&fit=crop' }
-    ],
-    household: [
-      { id: 9, name: 'Порошок Ariel', price: 1500, unit: 'упак', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop' },
-      { id: 10, name: 'Средство для мытья посуды', price: 280, unit: 'бут', image: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=200&h=200&fit=crop' }
-    ]
+        if (clientsError) {
+          console.error('Ошибка загрузки клиентов:', clientsError);
+          setClients([]);
+        } else {
+          setClients(clientsData || []);
+        }
+
+        // Загружаем товары
+        const { data: productsData, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .order('category', { ascending: true })
+          .order('name', { ascending: true });
+
+        if (productsError) {
+          console.error('Ошибка загрузки товаров:', productsError);
+          setProducts([]);
+        } else {
+          setProducts(productsData || []);
+        }
+
+        // Создаём список категорий из загруженных товаров
+        const uniqueCategories = [...new Set((productsData || []).map(p => p.category))];
+        const categoryList = uniqueCategories.map(cat => ({
+          id: cat,
+          name: getCategoryName(cat)
+        }));
+        setCategories(categoryList);
+
+        // Устанавливаем первую категорию как выбранную, если есть товары
+        if (categoryList.length > 0 && !selectedCategory) {
+          setSelectedCategory(categoryList[0].id);
+        }
+
+      } catch (error) {
+        console.error('Ошибка загрузки данных:', error);
+      } finally {
+        setLoading(false);
+        setLoadingMessage('');
+      }
+    };
+
+    loadDataOnMount();
+  }, [selectedCategory]);
+
+  // Функция для получения русского названия категории
+  const getCategoryName = (categoryId: string): string => {
+    const categoryNames: { [key: string]: string } = {
+      'beverages': 'Напитки',
+      'snacks': 'Снеки',
+      'dairy': 'Молочные продукты',
+      'household': 'Бытовая химия',
+      'food': 'Продукты питания',
+      'bakery': 'Хлебобулочные изделия',
+      'meat': 'Мясные продукты',
+      'frozen': 'Замороженные продукты'
+    };
+    return categoryNames[categoryId] || categoryId;
   };
 
   const updateQuantity = (productId: number, change: number) => {
@@ -197,13 +249,25 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
 
   const getTotalPrice = (): number => {
     return Object.entries(cart).reduce((sum: number, [productId, qty]: [string, number]) => {
-      const product = Object.values(products).flat().find(p => p.id === parseInt(productId));
+      const product = products.find(p => p.id === parseInt(productId));
       return sum + (product ? product.price * qty : 0);
     }, 0);
   };
 
-  const currentProducts: Product[] = products[selectedCategory] || [];
+  const currentProducts: Product[] = products.filter(p => p.category === selectedCategory);
   const selectedClientData = clients.find(c => c.id === parseInt(selectedClient));
+
+  // Показываем загрузку
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">{loadingMessage || 'Загрузка данных...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -327,7 +391,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                           alt={product.name}
                           className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80"
                           onClick={() => {
-                            setSelectedImage(product.image);
+                            setSelectedImage(product.image || '');
                             setShowImageModal(true);
                           }}
                         />
