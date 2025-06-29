@@ -27,9 +27,10 @@ interface OrderFormProps {
     name: string;
     email: string;
   };
+  userRole: 'admin' | 'sales_rep';
 }
 
-const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser }) => {
+const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole }) => {
   // Используем реальные данные пользователя
   const currentAgent = {
     id: 'agent_001',
@@ -218,7 +219,9 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser }) => {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500">Торговый агент:</p>
+              <p className="text-sm text-gray-500">
+                {userRole === 'admin' ? 'Администратор:' : 'Торговый агент:'}
+              </p>
               <p className="font-semibold text-gray-800">{currentAgent.name}</p>
               <p className="text-xs text-gray-500">{currentAgent.email}</p>
             </div>

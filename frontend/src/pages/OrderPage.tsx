@@ -5,10 +5,11 @@ interface OrderPageProps {
     name: string;
     email: string;
   };
+  userRole: 'admin' | 'sales_rep';
 }
 
-const OrderPage: React.FC<OrderPageProps> = ({ currentUser }) => {
-  return <OrderFormPrototype currentUser={currentUser} />;
+const OrderPage: React.FC<OrderPageProps> = ({ currentUser, userRole }) => {
+  return <OrderFormPrototype currentUser={currentUser} userRole={userRole} />;
 };
 
 export default OrderPage; 

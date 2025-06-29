@@ -542,6 +542,7 @@ function App() {
                 name: currentUserName,
                 email: currentUserEmail
               }}
+              userRole={userRole || 'sales_rep'}
             />
           )}
           {currentPage === 'clients' && <ClientsPage />}
