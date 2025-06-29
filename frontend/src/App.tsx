@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 import { supabase } from './supabaseClient'
 import AdminPage from './pages/AdminPage'
@@ -74,6 +74,26 @@ function App() {
     }
   }
 
+  // Полная очистка сессии для тестирования
+  const handleFullLogout = useCallback(async () => {
+    try {
+      await supabase.auth.signOut({ scope: 'global' })
+      // Очищаем localStorage
+      localStorage.clear()
+      sessionStorage.clear()
+    } catch (error) {
+      console.error('Full logout error:', error)
+    }
+    setIsAuthenticated(false)
+    setUserRole(null)
+    setCurrentUserName('')
+    setCurrentUserEmail('')
+    setCurrentPage('order')
+    resetForm()
+    // Перезагружаем страницу для полной очистки
+    window.location.reload()
+  }, [])
+
   // Проверка размера экрана и восстановление сессии
   useEffect(() => {
     const checkMobile = () => {
@@ -82,19 +102,89 @@ function App() {
     }
     
     // Добавляем функции в window для доступа через консоль
-    ;(window as typeof window & { makeAdmin: typeof makeAdmin; makeMeAdmin: typeof makeMeAdmin }).makeAdmin = makeAdmin
-    ;(window as typeof window & { makeAdmin: typeof makeAdmin; makeMeAdmin: typeof makeMeAdmin }).makeMeAdmin = makeMeAdmin
+    ;(window as typeof window & { 
+      makeAdmin: typeof makeAdmin; 
+      makeMeAdmin: typeof makeMeAdmin;
+      fullLogout: typeof handleFullLogout;
+      testAutoLogout: () => void;
+    }).makeAdmin = makeAdmin
+    ;(window as typeof window & { 
+      makeAdmin: typeof makeAdmin; 
+      makeMeAdmin: typeof makeMeAdmin;
+      fullLogout: typeof handleFullLogout;
+      testAutoLogout: () => void;
+    }).makeMeAdmin = makeMeAdmin
+    ;(window as typeof window & { 
+      makeAdmin: typeof makeAdmin; 
+      makeMeAdmin: typeof makeMeAdmin;
+      fullLogout: typeof handleFullLogout;
+      testAutoLogout: () => void;
+    }).fullLogout = handleFullLogout
+    ;(window as typeof window & { 
+      makeAdmin: typeof makeAdmin; 
+      makeMeAdmin: typeof makeMeAdmin;
+      fullLogout: typeof handleFullLogout;
+      testAutoLogout: () => void;
+    }).testAutoLogout = () => {
+      // Устанавливаем время последнего входа на вчера для тестирования
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      localStorage.setItem('lastLoginTime', yesterday.toISOString())
+      console.log('🧪 Установлено время последнего входа на вчера для тестирования')
+      console.log('🧪 Обновите страницу, чтобы сработал автоматический выход')
+    }
     
     console.log('🔧 Функции для управления ролями доступны:')
     console.log('- makeAdmin("email@example.com") - назначить админа по email')
     console.log('- makeMeAdmin() - назначить себя админом')
+    console.log('- fullLogout() - полный выход с очисткой всех данных')
+    console.log('- testAutoLogout() - тестирование автоматического выхода')
+    
+    // Функция проверки автоматического выхода в 02:00
+    const checkAutoLogout = () => {
+      const now = new Date()
+      const lastLoginTime = localStorage.getItem('lastLoginTime')
+      
+      if (lastLoginTime) {
+        const lastLogin = new Date(lastLoginTime)
+        const today2AM = new Date()
+        today2AM.setHours(2, 0, 0, 0)
+        
+        // Если последний вход был вчера или раньше, и сейчас уже прошло 02:00
+        if (lastLogin < today2AM && now >= today2AM) {
+          console.log('⏰ Автоматический выход: прошло 02:00, сессия сброшена')
+          handleFullLogout()
+          return true
+        }
+        
+        // Если последний вход был позавчера или раньше
+        const yesterday2AM = new Date(today2AM)
+        yesterday2AM.setDate(yesterday2AM.getDate() - 1)
+        
+        if (lastLogin < yesterday2AM) {
+          console.log('⏰ Автоматический выход: сессия устарела')
+          handleFullLogout()
+          return true
+        }
+      }
+      
+      return false
+    }
     
     const checkAuth = async () => {
       try {
+        // Сначала проверяем автоматический выход
+        if (checkAutoLogout()) {
+          return // Если произошел автоматический выход, не продолжаем
+        }
+        
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user) {
           console.log('Пользователь найден в сессии:', session.user.email)
+          
+          // Сохраняем время текущего входа
+          localStorage.setItem('lastLoginTime', new Date().toISOString())
           
           // Сохраняем email пользователя
           setCurrentUserEmail(session.user.email || '')
@@ -150,10 +240,33 @@ function App() {
     checkMobile()
     checkAuth()
     
+    // Устанавливаем периодическую проверку автоматического выхода каждые 10 минут
+    const autoLogoutInterval = setInterval(() => {
+      if (isAuthenticated) {
+        const now = new Date()
+        const lastLoginTime = localStorage.getItem('lastLoginTime')
+        
+        if (lastLoginTime) {
+          const lastLogin = new Date(lastLoginTime)
+          const today2AM = new Date()
+          today2AM.setHours(2, 0, 0, 0)
+          
+          // Если последний вход был вчера или раньше, и сейчас уже прошло 02:00
+          if (lastLogin < today2AM && now >= today2AM) {
+            console.log('⏰ Автоматический выход по расписанию: прошло 02:00')
+            handleFullLogout()
+          }
+        }
+      }
+    }, 10 * 60 * 1000) // Проверяем каждые 10 минут
+    
     window.addEventListener('resize', checkMobile)
     
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+      clearInterval(autoLogoutInterval)
+    }
+  }, [handleFullLogout, isAuthenticated])
 
   const resetForm = () => {
     setEmail('')
@@ -172,6 +285,7 @@ function App() {
     setIsAuthenticated(false)
     setUserRole(null)
     setCurrentUserName('')
+    setCurrentUserEmail('')
     setCurrentPage('order')
     resetForm()
   }
@@ -258,6 +372,9 @@ function App() {
         console.log('Пользователь вошел:', authData.user.email)
         
         setMessage('Вход выполнен успешно!')
+        
+        // Сохраняем время входа для автоматического выхода в 02:00
+        localStorage.setItem('lastLoginTime', new Date().toISOString())
         
         // Сохраняем email пользователя
         setCurrentUserEmail(authData.user.email || '')
