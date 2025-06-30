@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Filter, Calendar } from 'lucide-react';
+import { ShoppingCart, Filter, Calendar, Download } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
+import Papa from 'papaparse';
 
 interface Order {
   id: string;
@@ -147,6 +148,157 @@ const OrdersSection: React.FC = () => {
     }
   };
 
+  // Функция для экспорта заказов в CSV
+  const exportOrdersToCSV = async () => {
+    try {
+      // Подготавливаем данные для экспорта
+      const exportData = [];
+
+      for (const order of orders) {
+        const client = clients[order.client_id];
+        const manager = profiles[order.rep_id];
+
+        // Если позиции заказа не загружены, загружаем их
+        let items = orderItems[order.id];
+        if (!items) {
+          const { data: itemsData, error } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', order.id);
+
+          if (!error && itemsData) {
+            const productIds = itemsData.map(item => item.product_id);
+            const { data: products } = await supabase
+              .from('products')
+              .select('id, name')
+              .in('id', productIds);
+
+            const productsMap: { [key: string]: string } = {};
+            products?.forEach(product => {
+              productsMap[product.id] = product.name;
+            });
+
+            items = itemsData.map(item => ({
+              ...item,
+              product_name: productsMap[item.product_id] || 'Неизвестный товар'
+            }));
+          } else {
+            items = [];
+          }
+        }
+
+        // Добавляем строку для каждой позиции заказа
+        if (items && items.length > 0) {
+          items.forEach(item => {
+            exportData.push({
+              'ID заказа': order.id,
+              'Дата заказа': new Date(order.created_at).toLocaleDateString('ru-RU'),
+              'Время заказа': new Date(order.created_at).toLocaleTimeString('ru-RU'),
+              'Дата доставки': order.delivery_date,
+              'Клиент': client?.name || 'Неизвестен',
+              'Компания': client?.company_name || '',
+              'Адрес': client?.address || '',
+              'Менеджер': manager?.name || 'Неизвестен',
+              'Email менеджера': manager?.email || '',
+              'Товар': item.product_name,
+              'Количество': item.quantity,
+              'Единица': item.unit || 'шт',
+              'Цена за единицу': item.price,
+              'Сумма позиции': item.quantity * item.price,
+              'Комментарий': item.comment || '',
+              'Общая сумма заказа': order.total_price,
+              'Всего позиций в заказе': order.total_items
+            });
+          });
+        } else {
+          // Если нет позиций, добавляем общую информацию о заказе
+          exportData.push({
+            'ID заказа': order.id,
+            'Дата заказа': new Date(order.created_at).toLocaleDateString('ru-RU'),
+            'Время заказа': new Date(order.created_at).toLocaleTimeString('ru-RU'),
+            'Дата доставки': order.delivery_date,
+            'Клиент': client?.name || 'Неизвестен',
+            'Компания': client?.company_name || '',
+            'Адрес': client?.address || '',
+            'Менеджер': manager?.name || 'Неизвестен',
+            'Email менеджера': manager?.email || '',
+            'Товар': 'Нет позиций',
+            'Количество': 0,
+            'Единица': '',
+            'Цена за единицу': 0,
+            'Сумма позиции': 0,
+            'Комментарий': '',
+            'Общая сумма заказа': order.total_price,
+            'Всего позиций в заказе': order.total_items
+          });
+        }
+      }
+
+      // Конвертируем в CSV
+      const csv = Papa.unparse(exportData, {
+        delimiter: ';', // Используем точку с запятой для лучшей совместимости с Excel
+        header: true
+      });
+
+      // Создаем и скачиваем файл
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('✅ Экспорт завершен успешно');
+    } catch (error) {
+      console.error('❌ Ошибка экспорта:', error);
+      alert('Ошибка при экспорте данных. Попробуйте снова.');
+    }
+  };
+
+  // Экспорт статистики заказов
+  const exportOrdersSummary = () => {
+    const summaryData = [
+      {
+        'Метрика': 'Всего заказов',
+        'Значение': orders.length
+      },
+      {
+        'Метрика': 'Всего позиций',
+        'Значение': orders.reduce((sum, order) => sum + order.total_items, 0)
+      },
+      {
+        'Метрика': 'Общая сумма (₸)',
+        'Значение': orders.reduce((sum, order) => sum + order.total_price, 0)
+      },
+      {
+        'Метрика': 'Средний чек (₸)',
+        'Значение': orders.length > 0 ? Math.round(orders.reduce((sum, order) => sum + order.total_price, 0) / orders.length) : 0
+      }
+    ];
+
+    const csv = Papa.unparse(summaryData, {
+      delimiter: ';',
+      header: true
+    });
+
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_summary_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -166,10 +318,28 @@ const OrdersSection: React.FC = () => {
             </p>
           </div>
           <div className="flex space-x-2">
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              Экспорт
-            </button>
+            <div className="relative group">
+              <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center">
+                <Download className="w-4 h-4 mr-2" />
+                Экспорт
+              </button>
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <button
+                  onClick={exportOrdersToCSV}
+                  className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Детальный отчет
+                </button>
+                <button
+                  onClick={exportOrdersSummary}
+                  className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Сводка по заказам
+                </button>
+              </div>
+            </div>
             <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center">
               <Filter className="w-4 h-4 mr-2" />
               Фильтры
