@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, User, Calendar, Package, Send, Eye, X } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, User, Package, Send, Eye, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface Product {
@@ -55,11 +55,14 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
   const [loadingMessage, setLoadingMessage] = useState('');
 
   const [selectedClient, setSelectedClient] = useState<string>('');
-  const [deliveryDate, setDeliveryDate] = useState<string>(() => {
+  
+  // Автоматически устанавливаем дату доставки на завтра
+  const deliveryDate = (() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
-  });
+  })();
+  
   const [selectedCategory, setSelectedCategory] = useState<string>('beverages');
   const [cart, setCart] = useState<Cart>({});
   const [comments, setComments] = useState<Comments>({});
@@ -379,21 +382,6 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
               </div>
             </div>
 
-            {/* Дата отгрузки */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Calendar className="text-blue-600" size={20} />
-                <h2 className="text-lg font-semibold">Дата отгрузки</h2>
-              </div>
-              
-              <input 
-                type="date"
-                value={deliveryDate}
-                onChange={(e) => setDeliveryDate(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
             {/* Каталог товаров */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -497,7 +485,8 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
               )}
 
               <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm"><strong>Дата отгрузки:</strong> {deliveryDate}</p>
+                <p className="text-sm"><strong>Дата создания заказа:</strong> {new Date().toLocaleDateString('ru-RU')}</p>
+                <p className="text-sm"><strong>Время:</strong> {new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
 
               <div className="mb-4">

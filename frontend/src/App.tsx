@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import type { User } from '@supabase/supabase-js'
-import { BarChart3, Package, Users, LogOut } from 'lucide-react'
+import { BarChart3, Package, Users, LogOut, Menu, X } from 'lucide-react'
 import './App.css'
 
 // Импорты компонентов
@@ -14,6 +14,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<'admin' | 'sales_rep'>('sales_rep')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   
   // Состояния для формы авторизации
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
@@ -206,12 +207,13 @@ function App() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Package className="w-8 h-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
                 Система управления заказами
               </h1>
             </div>
             
-            <div className="flex items-center space-x-1">
+            {/* Десктопная навигация */}
+            <div className="hidden md:flex items-center space-x-1">
               <button
                 onClick={() => setCurrentPage('order')}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -251,8 +253,19 @@ function App() {
               )}
             </div>
             
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
+            {/* Мобильная навигация */}
+            <div className="md:hidden flex items-center space-x-2">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
+            
+            {/* Пользователь и выход */}
+            <div className="hidden md:flex items-center space-x-4">
+              <span className="text-sm text-gray-700 truncate max-w-32">
                 {currentUser.name}
               </span>
               <button
@@ -264,6 +277,75 @@ function App() {
               </button>
             </div>
           </div>
+          
+          {/* Мобильное меню */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-gray-200">
+              <div className="pt-2 pb-3 space-y-1">
+                <button
+                  onClick={() => {
+                    setCurrentPage('order');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    currentPage === 'order'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Package className="w-4 h-4 inline mr-2" />
+                  Заказы
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setCurrentPage('clients');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    currentPage === 'clients'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Users className="w-4 h-4 inline mr-2" />
+                  Клиенты
+                </button>
+                
+                {userRole === 'admin' && (
+                  <button
+                    onClick={() => {
+                      setCurrentPage('admin');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      currentPage === 'admin'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4 inline mr-2" />
+                    Админ-панель
+                  </button>
+                )}
+                
+                {/* Мобильная информация о пользователе */}
+                <div className="border-t border-gray-200 pt-3 mt-3">
+                  <div className="px-3 py-2">
+                    <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
+                    <p className="text-sm text-gray-500">{currentUser.email}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 flex items-center"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Выйти
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
