@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from './supabaseClient'
 import type { User } from '@supabase/supabase-js'
 import { BarChart3, Package, Users, LogOut, Menu, X } from 'lucide-react'
 import './App.css'
 
-// Импорты компонентов
-import AdminAccess from './admin/AdminAccess'
-import OrderPage from './pages/OrderPage'
-import ClientsPage from './pages/ClientsPage'
+// Lazy loading компонентов для уменьшения первоначального бандла
+const AdminAccess = lazy(() => import('./admin/AdminAccess'))
+const OrderPage = lazy(() => import('./pages/OrderPage'))
+const ClientsPage = lazy(() => import('./pages/ClientsPage'))
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'order' | 'clients' | 'admin'>('order')
@@ -392,17 +392,19 @@ function App() {
 
       {/* Основное содержимое - строгий условный рендеринг */}
       <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
-        {currentPage === 'order' && (
-          <OrderPage currentUser={currentUser} userRole={userRole} />
-        )}
-        
-        {currentPage === 'clients' && (
-          <ClientsPage currentUser={currentUser} userRole={userRole} />
-        )}
-        
-        {currentPage === 'admin' && (
-          <AdminAccess />
-        )}
+        <Suspense fallback={<div className="flex justify-center items-center py-12"><div className="text-lg text-gray-600">Загрузка...</div></div>}>
+          {currentPage === 'order' && (
+            <OrderPage currentUser={currentUser} userRole={userRole} />
+          )}
+          
+          {currentPage === 'clients' && (
+            <ClientsPage currentUser={currentUser} userRole={userRole} />
+          )}
+          
+          {currentPage === 'admin' && (
+            <AdminAccess />
+          )}
+        </Suspense>
       </main>
     </div>
   )

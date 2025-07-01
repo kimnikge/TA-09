@@ -17,8 +17,6 @@ interface Client {
   id: string; // UUID в Supabase
   name: string;
   address: string;
-  company_name?: string | null;
-  seller_name?: string | null;
   created_by?: string | null;
   created_at?: string;
 }
@@ -72,13 +70,9 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [newClient, setNewClient] = useState<{
     name: string;
-    company: string;
-    seller: string;
     address: string;
   }>({
     name: '',
-    company: '',
-    seller: '',
     address: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -189,20 +183,18 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
   };
 
   const addNewClient = () => {
-    if (newClient.name && newClient.company) {
+    if (newClient.name && newClient.address) {
       const newId = generateUUID(); // Генерируем UUID совместимым способом
       const newClientData: Client = {
         id: newId,
         name: newClient.name,
-        company_name: newClient.company,
-        seller_name: newClient.seller,
         address: newClient.address
       };
       
       clients.push(newClientData);
       setSelectedClient(newId);
       setShowNewClientModal(false);
-      setNewClient({ name: '', company: '', seller: '', address: '' });
+      setNewClient({ name: '', address: '' });
     }
   };
 
@@ -358,7 +350,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                     <option value="">Выберите клиента...</option>
                     {clients.map(client => (
                       <option key={client.id} value={client.id}>
-                        {client.name} - {client.company_name || 'Не указано'}
+                        {client.name} - {client.address}
                       </option>
                     ))}
                   </select>
@@ -375,8 +367,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 {selectedClientData && (
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="font-semibold text-gray-800">{selectedClientData.name}</h3>
-                    <p className="text-sm text-gray-600">{selectedClientData.company_name || 'Компания не указана'}</p>
-                    <p className="text-sm text-gray-600">Продавец: {selectedClientData.seller_name || 'Не указан'}</p>
+                    <p className="text-sm text-gray-600">Адрес: {selectedClientData.address}</p>
                     <p className="text-sm text-gray-600">Адрес: {selectedClientData.address}</p>
                   </div>
                 )}
@@ -481,7 +472,6 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm font-semibold">{selectedClientData.name}</p>
                   <p className="text-xs text-gray-600">{selectedClientData.address}</p>
-                  <p className="text-xs text-gray-600">Продавец: {selectedClientData.seller_name || 'Не указан'}</p>
                 </div>
               )}
 
@@ -593,22 +583,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 value={newClient.name}
                 onChange={(e) => setNewClient(prev => ({...prev, name: e.target.value}))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              
-              <input 
-                type="text"
-                placeholder="Название ИП или ТОО"
-                value={newClient.company}
-                onChange={(e) => setNewClient(prev => ({...prev, company: e.target.value}))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              
-              <input 
-                type="text"
-                placeholder="Имя продавца"
-                value={newClient.seller}
-                onChange={(e) => setNewClient(prev => ({...prev, seller: e.target.value}))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
               />
               
               <input 
@@ -617,6 +592,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 value={newClient.address}
                 onChange={(e) => setNewClient(prev => ({...prev, address: e.target.value}))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
               />
             </div>
             
@@ -630,7 +606,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
               <button 
                 onClick={addNewClient}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                disabled={!newClient.name || !newClient.company}
+                disabled={!newClient.name || !newClient.address}
               >
                 Добавить
               </button>

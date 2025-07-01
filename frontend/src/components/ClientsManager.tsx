@@ -1,19 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Save, X, MapPin, Building, Phone, Mail } from 'lucide-react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
+import { Plus, Save, X, MapPin, Building } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface Client {
   id: string;
   name: string;
   address: string;
-  phone?: string;
-  email?: string;
   created_by: string;
   created_at: string;
-  created_by_profile?: {
-    name: string;
-    email: string;
-  };
 }
 
 interface ClientsManagerProps {
@@ -32,13 +26,11 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    address: '',
-    phone: '',
-    email: ''
+    address: ''
   });
 
   // Загрузка клиентов
-  const loadClients = React.useCallback(async () => {
+  const loadClients = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -47,14 +39,9 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
         .select(`
           id, 
           name, 
-          company_name, 
           address, 
-          seller_name, 
-          phone, 
-          email, 
           created_by, 
-          created_at,
-          created_by_profile:profiles!clients_created_by_fkey(name, email)
+          created_at
         `)
         .order('created_at', { ascending: false });
 
@@ -65,28 +52,21 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
 
       const { data, error } = await query;
 
-      if (error) throw error;
-
-      // Преобразуем данные в правильный формат
+      if (error) throw error;      // Преобразуем данные в правильный формат
       const clientsData: Client[] = (data || []).map(item => ({
         id: item.id,
         name: item.name,
-        company_name: item.company_name,
         address: item.address,
-        seller_name: item.seller_name,
-        phone: item.phone,
-        email: item.email,
         created_by: item.created_by,
-        created_at: item.created_at,
-        created_by_profile: Array.isArray(item.created_by_profile) 
-          ? item.created_by_profile[0] 
-          : item.created_by_profile
+        created_at: item.created_at
       }));
 
       setClients(clientsData);
     } catch (error) {
       console.error('Ошибка загрузки клиентов:', error);
-      alert('Ошибка загрузки клиентов');
+      console.error('Детали ошибки:', JSON.stringify(error, null, 2));
+      // Заменяем alert на более информативное сообщение
+      setClients([]); // Устанавливаем пустой массив вместо показа ошибки
     } finally {
       setLoading(false);
     }
@@ -126,9 +106,7 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
       // Очищаем форму
       setFormData({
         name: '',
-        address: '',
-        phone: '',
-        email: ''
+        address: ''
       });
       
       setShowAddForm(false);
@@ -225,35 +203,6 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
                 />
               </div>
 
-              {/* Телефон */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="w-4 h-4 inline mr-1" />
-                  Телефон
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="+7 (777) 123-45-67"
-                />
-              </div>
-
-              {/* Email */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="w-4 h-4 inline mr-1" />
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="contact@example.com"
-                />
-              </div>
             </div>
 
             {/* Кнопки */}
@@ -311,7 +260,7 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm font-medium text-gray-700">
                 <div>Название магазина</div>
                 <div>Адрес точки</div>
-                <div>Контакт</div>
+                <div>-</div>
                 <div>Добавлено</div>
               </div>
             </div>
@@ -326,19 +275,14 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
                       <p className="text-sm text-gray-900">{client.address}</p>
                     </div>
                     <div>
-                      {client.phone && (
-                        <p className="text-sm text-gray-900">{client.phone}</p>
-                      )}
-                      {client.email && (
-                        <p className="text-sm text-gray-500">{client.email}</p>
-                      )}
+                      <span className="text-sm text-gray-500">-</span>
                     </div>
                     <div>
                       <p className="text-sm text-gray-900">
                         {new Date(client.created_at).toLocaleDateString('ru-RU')}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {userRole === 'admin' && client.created_by_profile?.name || currentUser.name}
+                        {userRole === 'admin' ? 'Торговый представитель' : currentUser.name}
                       </p>
                     </div>
                   </div>
@@ -371,4 +315,4 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
   );
 };
 
-export default ClientsManager;
+export default memo(ClientsManager);

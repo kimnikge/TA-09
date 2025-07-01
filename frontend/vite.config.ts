@@ -13,11 +13,21 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
+          // React библиотеки
           vendor: ['react', 'react-dom'],
-          supabase: ['@supabase/supabase-js']
+          // Supabase
+          supabase: ['@supabase/supabase-js'],
+          // Иконки (может быть большой)
+          icons: ['lucide-react'],
+          // Утилиты для работы с данными
+          utils: ['papaparse']
         }
       }
-    }
+    },
+    // Улучшаем сжатие и производительность
+    sourcemap: false,
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 500
   },
   define: {
     global: 'globalThis',
