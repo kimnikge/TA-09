@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:clean": "npm run kill-ports && npm run dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -13,7 +14,8 @@
     "check-db": "tsx scripts/checkDatabase.ts",
     "check-tables": "tsx scripts/checkTableStructure.ts",
     "test-registration": "tsx scripts/testRegistration.ts",
-    "clean": "find src -name '*.js' -o -name '*.d.ts' | grep -v vite-env.d.ts | xargs rm -f && rm -rf node_modules/.tmp dist"
+    "clean": "find src -name '*.js' -o -name '*.d.ts' | grep -v vite-env.d.ts | xargs rm -f && rm -rf node_modules/.tmp dist",
+    "kill-ports": "lsof -ti:5173,3000,5174 | xargs kill -9 2>/dev/null || true"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.2",

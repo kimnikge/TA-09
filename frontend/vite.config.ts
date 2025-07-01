@@ -23,17 +23,22 @@ export default defineConfig({
     global: 'globalThis',
   },
   server: {
+    port: 5173,
+    host: true,
     hmr: {
-      // Явно указываем протокол, хост и порт для WebSocket
-      protocol: 'ws',
-      host: 'localhost',
-      port: 3000,
-      // Увеличиваем тайм-аут для WebSocket соединения
-      timeout: 120000
+      // Исправляем проблемы с WebSocket
+      port: 5173,
     },
-    // Поддержка работы при смене сети
+    // Настройки для стабильной работы WebSocket
     watch: {
-      usePolling: true
-    }
+      usePolling: false, // Отключаем polling для лучшей производительности
+      interval: 1000,
+    },
+    // Настройки для предотвращения конфликтов портов
+    strictPort: false,
   },
+  preview: {
+    port: 5173,
+    host: true,
+  }
 })
