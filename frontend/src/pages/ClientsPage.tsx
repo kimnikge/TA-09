@@ -1,10 +1,31 @@
 import React from 'react';
+import ClientsManager from '../components/ClientsManager';
 
-const ClientsPage: React.FC = () => {
+interface ClientsPageProps {
+  currentUser?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  userRole?: 'admin' | 'sales_rep';
+}
+
+const ClientsPage: React.FC<ClientsPageProps> = ({ currentUser, userRole }) => {
+  // Если props не переданы, используем заглушки (для совместимости)
+  const defaultUser = {
+    id: '',
+    name: 'Гость',
+    email: 'guest@example.com'
+  };
+
+  const defaultRole = 'sales_rep' as const;
+
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Клиенты</h1>
-      <p>Здесь будет список и добавление торговых точек (клиентов).</p>
+    <div className="container mx-auto px-4 py-6">
+      <ClientsManager 
+        currentUser={currentUser || defaultUser}
+        userRole={userRole || defaultRole}
+      />
     </div>
   );
 };

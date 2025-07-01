@@ -2,6 +2,21 @@ import { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, User, Package, Send, Eye, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
+// Функция для генерации UUID, совместимая с разными браузерами
+const generateUUID = (): string => {
+  // Проверяем поддержку crypto.randomUUID()
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  
+  // Fallback для старых браузеров
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 interface Product {
   id: string; // UUID в Supabase
   name: string;
@@ -189,7 +204,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
 
   const addNewClient = () => {
     if (newClient.name && newClient.company) {
-      const newId = crypto.randomUUID(); // Генерируем UUID как в Supabase
+      const newId = generateUUID(); // Генерируем UUID совместимым способом
       const newClientData: Client = {
         id: newId,
         name: newClient.name,

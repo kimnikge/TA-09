@@ -397,7 +397,7 @@ function App() {
         )}
         
         {currentPage === 'clients' && (
-          <ClientsPage />
+          <ClientsPage currentUser={currentUser} userRole={userRole} />
         )}
         
         {currentPage === 'admin' && (
