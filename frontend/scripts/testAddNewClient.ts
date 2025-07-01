@@ -141,20 +141,20 @@ interface SalesRep {
 async function testAddClientProcess(salesRep: SalesRep) {
   console.log(`\n3️⃣ Тестирование добавления клиента от имени: ${salesRep.name}`);
   
-  // Данные для новой торговой точки
+  // Данные для новой торговой точки (только обязательные поля)
   const newClientData = {
-    name: `Тестовая Торговая Точка ${Date.now()}`,
-    company_name: 'ТОО "Тестовая Компания"',
+    name: `Тестовый Магазин ${Date.now()}`,
     address: 'г. Алматы, ул. Тестовая, 123',
-    seller_name: 'Иванов Иван Иванович',
+    phone: '+7 (777) 123-45-67',
+    email: 'test@example.com',
     created_by: salesRep.id
   };
 
   console.log('📝 Данные клиента для добавления:', {
     name: newClientData.name,
-    company_name: newClientData.company_name,
     address: newClientData.address,
-    seller_name: newClientData.seller_name,
+    phone: newClientData.phone,
+    email: newClientData.email,
     created_by: `${salesRep.name} (${salesRep.id})`
   });
 
@@ -173,8 +173,9 @@ async function testAddClientProcess(salesRep: SalesRep) {
   console.log('✅ Клиент успешно добавлен:', {
     id: newClient.id,
     name: newClient.name,
-    company_name: newClient.company_name,
     address: newClient.address,
+    phone: newClient.phone,
+    email: newClient.email,
     created_at: new Date(newClient.created_at).toLocaleString('ru-RU')
   });
 
@@ -200,9 +201,9 @@ async function testAddClientProcess(salesRep: SalesRep) {
   console.log('✅ Клиент подтвержден в базе данных:', {
     id: savedClient.id,
     name: savedClient.name,
-    company_name: savedClient.company_name,
     address: savedClient.address,
-    seller_name: savedClient.seller_name,
+    phone: savedClient.phone,
+    email: savedClient.email,
     created_by: createdByProfile?.name || 'Неизвестен',
     created_at: new Date(savedClient.created_at).toLocaleString('ru-RU')
   });
@@ -211,7 +212,7 @@ async function testAddClientProcess(salesRep: SalesRep) {
   console.log('\n6️⃣ Получение списка клиентов торгового представителя...');
   const { data: salesRepClients, error: listError } = await supabase
     .from('clients')
-    .select('id, name, company_name, address, seller_name, created_at')
+    .select('id, name, address, phone, email, created_at')
     .eq('created_by', salesRep.id)
     .order('created_at', { ascending: false });
 
@@ -221,13 +222,13 @@ async function testAddClientProcess(salesRep: SalesRep) {
 
   console.log(`✅ Найдено ${salesRepClients.length} клиентов у торгового представителя:`);
   salesRepClients.forEach((client, index) => {
-    console.log(`   ${index + 1}. ${client.name} (${client.company_name}) - ${client.address}`);
+    console.log(`   ${index + 1}. ${client.name} - ${client.address} (тел: ${client.phone || 'не указан'})`);
   });
 
   // 7. Тестируем обновление данных клиента
   console.log('\n7️⃣ Тестирование обновления данных клиента...');
   const updatedData = {
-    seller_name: 'Петров Петр Петрович (обновлено)',
+    phone: '+7 (777) 987-65-43 (обновлено)',
     address: newClient.address + ' (обновлено)'
   };
 
@@ -246,7 +247,7 @@ async function testAddClientProcess(salesRep: SalesRep) {
   console.log('✅ Клиент успешно обновлен:', {
     id: updatedClient.id,
     name: updatedClient.name,
-    seller_name: updatedClient.seller_name,
+    phone: updatedClient.phone,
     address: updatedClient.address
   });
 

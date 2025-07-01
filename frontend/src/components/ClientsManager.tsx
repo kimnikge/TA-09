@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Save, X, MapPin, Building, User, Phone, Mail } from 'lucide-react';
+import { Plus, Save, X, MapPin, Building, Phone, Mail } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface Client {
   id: string;
   name: string;
-  company_name?: string;
   address: string;
-  seller_name?: string;
   phone?: string;
   email?: string;
   created_by: string;
@@ -34,9 +32,7 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    company_name: '',
     address: '',
-    seller_name: '',
     phone: '',
     email: ''
   });
@@ -130,9 +126,7 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
       // Очищаем форму
       setFormData({
         name: '',
-        company_name: '',
         address: '',
-        seller_name: '',
         phone: '',
         email: ''
       });
@@ -203,7 +197,7 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Building className="w-4 h-4 inline mr-1" />
-                  Название точки *
+                  Название магазина *
                 </label>
                 <input
                   type="text"
@@ -215,26 +209,11 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
                 />
               </div>
 
-              {/* Название компании */}
+              {/* Адрес */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Building className="w-4 h-4 inline mr-1" />
-                  Название компании
-                </label>
-                <input
-                  type="text"
-                  value={formData.company_name}
-                  onChange={(e) => handleInputChange('company_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="ТОО 'Компания'"
-                />
-              </div>
-
-              {/* Адрес */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   <MapPin className="w-4 h-4 inline mr-1" />
-                  Адрес *
+                  Адрес точки *
                 </label>
                 <input
                   type="text"
@@ -243,21 +222,6 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="г. Алматы, ул. Абая, 123"
                   required
-                />
-              </div>
-
-              {/* Продавец */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4 inline mr-1" />
-                  Контактное лицо
-                </label>
-                <input
-                  type="text"
-                  value={formData.seller_name}
-                  onChange={(e) => handleInputChange('seller_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Иванов Иван Иванович"
                 />
               </div>
 
@@ -345,8 +309,8 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
           <div className="overflow-hidden">
             <div className="bg-gray-50 px-6 py-3 border-b">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm font-medium text-gray-700">
-                <div>Название</div>
-                <div>Адрес</div>
+                <div>Название магазина</div>
+                <div>Адрес точки</div>
                 <div>Контакт</div>
                 <div>Добавлено</div>
               </div>
@@ -357,19 +321,13 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <h3 className="font-medium text-gray-900">{client.name}</h3>
-                      {client.company_name && (
-                        <p className="text-sm text-gray-500">{client.company_name}</p>
-                      )}
                     </div>
                     <div>
                       <p className="text-sm text-gray-900">{client.address}</p>
                     </div>
                     <div>
-                      {client.seller_name && (
-                        <p className="text-sm text-gray-900">{client.seller_name}</p>
-                      )}
                       {client.phone && (
-                        <p className="text-sm text-gray-500">{client.phone}</p>
+                        <p className="text-sm text-gray-900">{client.phone}</p>
                       )}
                       {client.email && (
                         <p className="text-sm text-gray-500">{client.email}</p>
