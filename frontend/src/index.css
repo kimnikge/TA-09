@@ -21,10 +21,11 @@
   box-sizing: border-box;
 }
 
-/* Явные стили для Safari */
+/* Улучшенные стили для Safari и мобильных устройств */
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  font-size: 16px; /* Базовый размер шрифта для лучшей читаемости на мобильных */
 }
 
 html, body {
@@ -41,6 +42,8 @@ body {
   color: #2d3748;
   position: relative;
   min-height: 100vh;
+  /* Улучшенная поддержка мобильных viewport */
+  min-height: -webkit-fill-available;
 }
 
 #root {
@@ -50,6 +53,7 @@ body {
   padding: 0;
   position: relative;
   min-height: 100vh;
+  min-height: -webkit-fill-available;
 }
 
 /* Убираем стили ссылок по умолчанию */
@@ -58,20 +62,51 @@ a {
   text-decoration: none;
 }
 
-/* Убираем стили кнопок по умолчанию */
+/* Улучшенные стили кнопок */
 button {
   font-family: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* Улучшенная поддержка touch */
 }
 
-/* Убираем стили полей ввода по умолчанию */
+/* Улучшенные стили полей ввода */
 input, textarea, select {
   font-family: inherit;
+  font-size: 16px; /* Предотвращение zoom на iOS */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
-/* Медиа-запрос для поддержки динамической высоты viewport на мобильных */
+/* Специальные стили для iOS Safari */
 @supports (-webkit-touch-callout: none) {
   .mobile-viewport {
     height: -webkit-fill-available;
+  }
+  
+  /* Фикс для 100vh на мобильных Safari */
+  .min-h-screen {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Улучшенная читаемость текста на мобильных */
+@media (max-width: 768px) {
+  html {
+    font-size: 16px; /* Предотвращение zoom на мобильных */
+  }
+  
+  body {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+}
+
+/* Улучшенные стили для сенсорных устройств */
+@media (hover: none) and (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 44px; /* Рекомендуемый размер touch target */
+    min-width: 44px;
   }
 }
