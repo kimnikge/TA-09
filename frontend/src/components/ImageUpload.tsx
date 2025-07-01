@@ -133,7 +133,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             <img
               src={currentImageUrl}
               alt="Изображение товара"
-              className="w-full h-48 object-cover rounded-lg border border-gray-300"
+              className="w-full h-32 object-cover rounded-lg border border-gray-300"
             />
             <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
               <div className="flex space-x-2">
@@ -163,7 +163,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           <div
             onClick={handleUploadClick}
             className={`
-              w-full h-48 border-2 border-dashed rounded-lg flex flex-col items-center justify-center
+              w-full h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center
               cursor-pointer transition-colors
               ${uploading 
                 ? 'border-gray-300 bg-gray-50 cursor-not-allowed' 
@@ -173,13 +173,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           >
             {uploading ? (
               <div className="flex flex-col items-center">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-                <p className="text-sm text-gray-600">Загрузка изображения...</p>
+                <Loader2 className="w-6 h-6 text-blue-600 animate-spin mb-1" />
+                <p className="text-xs text-gray-600">Загрузка...</p>
               </div>
             ) : (
               <div className="flex flex-col items-center">
-                <ImageIcon className="w-12 h-12 text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-1">Нажмите для загрузки изображения</p>
+                <ImageIcon className="w-8 h-8 text-gray-400 mb-1" />
+                <p className="text-xs text-gray-600 mb-1">Нажмите для загрузки</p>
                 <p className="text-xs text-gray-500">PNG, JPG, WEBP до {maxSize}MB</p>
               </div>
             )}
