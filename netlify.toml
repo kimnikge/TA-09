@@ -1,9 +1,12 @@
 [build]
-  # Команда для сборки проекта
-  command = "cd frontend && npm run build"
+  # Базовая директория для сборки
+  base = "frontend"
   
-  # Папка с результатом сборки
-  publish = "frontend/dist"
+  # Команда для сборки проекта (выполняется в папке frontend)
+  command = "npm ci && npm run build"
+  
+  # Папка с результатом сборки (относительно frontend/)
+  publish = "dist"
   
   # Node.js версия
   environment = { NODE_VERSION = "18" }
@@ -55,10 +58,10 @@
 
 # Настройки для автодеплоя
 [context.production]
-  command = "cd frontend && npm ci && npm run build"
+  command = "npm ci && npm run build"
 
 [context.deploy-preview]
-  command = "cd frontend && npm ci && npm run build"
+  command = "npm ci && npm run build"
 
 [context.branch-deploy]
-  command = "cd frontend && npm ci && npm run build"
+  command = "npm ci && npm run build"
