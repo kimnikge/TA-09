@@ -12,7 +12,7 @@ async function checkClientsStructure() {
 
   try {
     // Проверяем структуру таблицы clients
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('clients')
       .select('*')
       .limit(1);

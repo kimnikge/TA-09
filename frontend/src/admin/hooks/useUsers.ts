@@ -70,22 +70,33 @@ export const useUsers = () => {
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
       const newStatus = !currentStatus;
+      console.log(`🔄 useUsers: Обновление статуса пользователя ${userId}: ${currentStatus} → ${newStatus}`);
+      
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ approved: newStatus })
         .eq('id', userId);
       
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('❌ useUsers: Ошибка Supabase:', updateError);
+        throw updateError;
+      }
+      
+      console.log('✅ useUsers: Запрос к Supabase выполнен успешно');
       
       // Обновляем локальное состояние
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, approved: newStatus } : user
-      ));
+      setUsers(currentUsers => {
+        const updatedUsers = currentUsers.map(user => 
+          user.id === userId ? { ...user, approved: newStatus } : user
+        );
+        console.log('✅ useUsers: Локальное состояние обновлено');
+        return updatedUsers;
+      });
       
-      console.log('✅ Статус пользователя обновлен');
+      console.log('✅ useUsers: Статус пользователя обновлен успешно');
       return true;
     } catch (err) {
-      console.error('❌ Ошибка обновления статуса:', err);
+      console.error('❌ useUsers: Ошибка обновления статуса:', err);
       setError(err instanceof Error ? err.message : 'Ошибка при обновлении статуса');
       return false;
     }

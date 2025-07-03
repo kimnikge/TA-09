@@ -4,6 +4,14 @@ import { config } from 'dotenv';
 // Загружаем переменные окружения
 config();
 
+interface Client {
+  id: string;
+  name: string;
+  address: string;
+  created_by: string;
+  created_at: string;
+}
+
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://olutrxiazrmanrgzzwmb.supabase.co';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhenJtYW5yZ3p6d21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzMwMjEsImV4cCI6MjA2NjQ0OTAyMX0.qxU_1Fjk4Mu9vMSfEI4jSGm3yYhh9WbmlSEFttOMKiM';
 
@@ -67,13 +75,13 @@ async function finalSystemTest() {
       }
       acc[creatorId].push(client);
       return acc;
-    }, {} as Record<string, typeof clients>) || {};
+    }, {} as Record<string, Client[]>) || {};
 
     console.log('\n📊 Распределение клиентов по создателям:');
     Object.entries(clientsByCreator).forEach(([creatorId, creatorClients]) => {
       const creator = profiles?.find(p => p.id === creatorId);
       const creatorName = creator ? creator.name : 'Неизвестный';
-      console.log(`   ${creatorName}: ${creatorClients.length} клиентов`);
+      console.log(`   ${creatorName}: ${(creatorClients as Client[]).length} клиентов`);
     });
 
     // 3. Тест логики отображения для торгового представителя

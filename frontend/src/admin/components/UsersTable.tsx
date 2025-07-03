@@ -1,5 +1,5 @@
-import React from 'react';
-import { User, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Edit, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import type { UserProfile } from '../hooks/useUsers';
 
 interface UsersTableProps {
@@ -17,6 +17,8 @@ const UsersTable: React.FC<UsersTableProps> = ({
   onToggleStatus,
   onDeleteUser,
 }) => {
+  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>('');
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -37,19 +39,54 @@ const UsersTable: React.FC<UsersTableProps> = ({
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-8">
           <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет пользователей</h3>
-          <p className="text-gray-500">Пользователи не найдены</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет агентов</h3>
+          <p className="text-gray-500">Агенты не найдены</p>
         </div>
       </div>
     );
   }
 
   const handleRoleChange = async (userId: string, newRole: string) => {
-    await onUpdateRole(userId, newRole);
+    setUpdatingUser(userId);
+    setStatusMessage('');
+    try {
+      const success = await onUpdateRole(userId, newRole);
+      if (success) {
+        setStatusMessage('Роль обновлена успешно');
+      } else {
+        setStatusMessage('Ошибка при обновлении роли');
+      }
+    } catch (error) {
+      setStatusMessage('Ошибка при обновлении роли');
+    } finally {
+      setUpdatingUser(null);
+      setTimeout(() => setStatusMessage(''), 3000);
+    }
   };
 
   const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
-    await onToggleStatus(userId, currentStatus);
+    setUpdatingUser(userId);
+    setStatusMessage('');
+    
+    console.log(`🔄 Переключение статуса пользователя ${userId}: ${currentStatus} → ${!currentStatus}`);
+    
+    try {
+      const success = await onToggleStatus(userId, currentStatus);
+      if (success) {
+        const newStatus = !currentStatus;
+        setStatusMessage(`Статус изменен: ${newStatus ? 'Активен' : 'Заблокирован'}`);
+        console.log(`✅ Статус успешно изменен на: ${newStatus ? 'Активен' : 'Заблокирован'}`);
+      } else {
+        setStatusMessage('Ошибка при изменении статуса');
+        console.error('❌ Не удалось изменить статус');
+      }
+    } catch (err) {
+      setStatusMessage('Ошибка при изменении статуса');
+      console.error('❌ Ошибка при изменении статуса:', err);
+    } finally {
+      setUpdatingUser(null);
+      setTimeout(() => setStatusMessage(''), 3000);
+    }
   };
 
   const handleDelete = async (userId: string) => {
@@ -59,10 +96,19 @@ const UsersTable: React.FC<UsersTableProps> = ({
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-lg font-medium text-gray-900">Управление пользователями</h2>
+        <h2 className="text-lg font-medium text-gray-900">Управление агентами</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Всего пользователей: {users.length}
+          Всего агентов: {users.length}
         </p>
+        {statusMessage && (
+          <div className={`mt-2 p-2 rounded text-sm ${
+            statusMessage.includes('Ошибка') 
+              ? 'bg-red-100 text-red-700 border border-red-300' 
+              : 'bg-green-100 text-green-700 border border-green-300'
+          }`}>
+            {statusMessage}
+          </div>
+        )}
       </div>
       
       <div className="overflow-x-auto">
@@ -70,7 +116,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Пользователь
+                Агент
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Роль
@@ -104,25 +150,30 @@ const UsersTable: React.FC<UsersTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <select
-                    value={user.role || 'user'}
+                    value={user.role || 'sales_rep'}
                     onChange={(e) => handleRoleChange(user.id, e.target.value)}
                     className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="user">Пользователь</option>
+                    <option value="sales_rep">Агент</option>
                     <option value="admin">Админ</option>
-                    <option value="moderator">Модератор</option>
                   </select>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
                     onClick={() => handleStatusToggle(user.id, user.approved || false)}
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    disabled={updatingUser === user.id}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
                       user.approved
                         ? 'bg-green-100 text-green-800 hover:bg-green-200'
                         : 'bg-red-100 text-red-800 hover:bg-red-200'
-                    }`}
+                    } ${updatingUser === user.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {user.approved ? (
+                    {updatingUser === user.id ? (
+                      <>
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        Сохранение...
+                      </>
+                    ) : user.approved ? (
                       <>
                         <CheckCircle className="w-3 h-3 mr-1" />
                         Активен
