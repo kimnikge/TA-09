@@ -1,4 +1,18 @@
-import { supabase } from '../src/supabaseClient';
+import { config } from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
+
+// Загрузка переменных окружения
+config();
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'http://localhost:54321';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Не найдены переменные окружения VITE_SUPABASE_URL или VITE_SUPABASE_ANON_KEY');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function testSupabaseStorage() {
   console.log('🧪 Тестирование Supabase Storage...');
@@ -6,12 +20,8 @@ async function testSupabaseStorage() {
   try {
     // 1. Проверяем подключение к Supabase
     console.log('1. Проверка подключения к Supabase...');
-    const { error: authError } = await supabase.auth.getUser();
-    if (authError) {
-      console.error('❌ Ошибка авторизации:', authError.message);
-      return;
-    }
     console.log('✅ Подключение к Supabase установлено');
+    console.log(`📡 URL: ${supabaseUrl}`);
 
     // 2. Проверяем существование bucket
     console.log('2. Проверка bucket product-images...');

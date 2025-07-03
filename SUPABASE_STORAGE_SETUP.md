@@ -5,37 +5,66 @@
 
 ## 🚀 Установка и настройка
 
-### 1. Создание Storage Bucket
-Выполните SQL-скрипт в Supabase Dashboard (SQL Editor):
+### 1. Создание Storage Bucket через Dashboard
+**ВАЖНО**: Bucket необходимо создать через Supabase Dashboard из-за политик безопасности RLS.
+
+1. Перейдите в ваш проект Supabase
+2. Откройте раздел **Storage** в боковом меню
+3. Нажмите **Create a new bucket**
+4. Заполните параметры:
+   - **Name**: `product-images`
+   - **Public bucket**: ✅ **Включить**
+   - **File size limit**: `5242880` (5MB)
+   - **Allowed MIME types**: `image/jpeg,image/png,image/webp,image/gif`
+5. Нажмите **Create bucket**
+
+### 2. Настройка политик доступа
+После создания bucket нужно настроить политики доступа:
+
+1. В разделе **Storage** → **Policies**
+2. Создайте политику для **product-images**:
 
 ```sql
--- Файл: SETUP_STORAGE.sql
--- Создает bucket 'product-images' и настраивает политики доступа
+-- Политика для публичного чтения
+CREATE POLICY "Public Access" ON storage.objects
+FOR SELECT USING (bucket_id = 'product-images');
+
+-- Политика для аутентифицированных пользователей на запись
+CREATE POLICY "Authenticated users can upload" ON storage.objects
+FOR INSERT WITH CHECK (
+  bucket_id = 'product-images' AND 
+  auth.uid() IS NOT NULL
+);
+
+-- Политика для обновления файлов
+CREATE POLICY "Users can update own files" ON storage.objects
+FOR UPDATE USING (
+  bucket_id = 'product-images' AND 
+  auth.uid() IS NOT NULL
+);
+
+-- Политика для удаления файлов
+CREATE POLICY "Users can delete own files" ON storage.objects
+FOR DELETE USING (
+  bucket_id = 'product-images' AND 
+  auth.uid() IS NOT NULL
+);
 ```
 
-**Или через Dashboard:**
-1. Перейдите в Storage → Create a new bucket
-2. Название: `product-images`
-3. Public bucket: ✅ Да
-4. File size limit: `5242880` (5MB)
-5. Allowed MIME types: `image/jpeg,image/png,image/webp,image/gif`
-
-### 2. Обновление таблицы products
-Выполните SQL-скрипт для добавления поля image_url:
-
-```sql
--- Файл: UPDATE_PRODUCTS_TABLE.sql
--- Добавляет колонку image_url в таблицу products
-```
-
-### 3. Тестирование настройки
-Запустите тест для проверки корректности настройки:
+### 3. Автоматическая проверка настройки
+После создания bucket через Dashboard, проверьте настройку:
 
 ```bash
 cd frontend
-npm run dev
-# В другом терминале:
-npx ts-node scripts/testSupabaseStorage.ts
+npm run test-storage
+```
+
+### 4. Альтернативный способ - через скрипт
+Если хотите попробовать создать bucket через скрипт (может не работать из-за RLS):
+
+```bash
+cd frontend
+npm run setup-storage
 ```
 
 ## 📁 Новые файлы

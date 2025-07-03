@@ -15,6 +15,8 @@
     "check-tables": "tsx scripts/checkTableStructure.ts",
     "test-registration": "tsx scripts/testRegistration.ts",
     "test-add-client": "tsx scripts/testAddNewClient.ts",
+    "setup-storage": "tsx scripts/createStorageBucket.ts",
+    "test-storage": "tsx scripts/testSupabaseStorage.ts",
     "clean": "find src -name '*.js' -o -name '*.d.ts' | grep -v vite-env.d.ts | xargs rm -f && rm -rf node_modules/.tmp dist",
     "kill-ports": "lsof -ti:5173,3000,5174 | xargs kill -9 2>/dev/null || true"
   },

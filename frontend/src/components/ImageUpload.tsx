@@ -25,6 +25,16 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       setError('');
       setUploading(true);
 
+      // Проверяем авторизацию пользователя
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error('Пользователь не авторизован:', authError);
+        throw new Error('Необходимо войти в систему для загрузки изображений');
+      }
+
+      console.log('Пользователь авторизован:', user.id);
+
       // Проверка размера файла
       if (file.size > maxSize * 1024 * 1024) {
         throw new Error(`Размер файла не должен превышать ${maxSize}MB`);
@@ -41,6 +51,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       const filePath = `products/${fileName}`;
 
       // Загружаем файл в Supabase Storage
+      console.log('Загружаем файл:', filePath, 'в bucket:', bucketName);
       const { error } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file, {
@@ -48,7 +59,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           upsert: false
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Подробная ошибка загрузки:', error);
+        throw error;
+      }
 
       // Получаем публичный URL
       const { data: urlData } = supabase.storage
