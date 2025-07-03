@@ -44,9 +44,17 @@ const OrdersSection: React.FC = () => {
   const [profiles, setProfiles] = useState<{ [profileId: string]: Profile }>({});
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
+  
+  // Состояние для отслеживания просмотренных заказов
+  const [viewedOrders, setViewedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadOrders();
+    // Загружаем просмотренные заказы из localStorage
+    const saved = localStorage.getItem('viewedOrders');
+    if (saved) {
+      setViewedOrders(new Set(JSON.parse(saved)));
+    }
   }, []);
 
   const loadOrders = async () => {
@@ -145,6 +153,15 @@ const OrdersSection: React.FC = () => {
     setSelectedOrder(selectedOrder === orderId ? null : orderId);
     if (selectedOrder !== orderId && !orderItems[orderId]) {
       loadOrderItems(orderId);
+    }
+    
+    // Помечаем заказ как просмотренный
+    if (!viewedOrders.has(orderId)) {
+      const newViewedOrders = new Set(viewedOrders);
+      newViewedOrders.add(orderId);
+      setViewedOrders(newViewedOrders);
+      // Сохраняем в localStorage
+      localStorage.setItem('viewedOrders', JSON.stringify(Array.from(newViewedOrders)));
     }
   };
 
@@ -306,20 +323,30 @@ const OrdersSection: React.FC = () => {
       </div>
     );
   }
+
+  // Подсчитываем новые заказы
+  const newOrdersCount = orders.filter(order => !viewedOrders.has(order.id)).length;
   
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-6">
           <div>
-            <h2 className="text-lg font-medium text-gray-900">Управление заказами</h2>
+            <div className="flex items-center space-x-3">
+              <h2 className="text-lg font-medium text-gray-900">Управление заказами</h2>
+              {newOrdersCount > 0 && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 animate-pulse">
+                  {newOrdersCount} новых
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500 mt-1">
               Просматривайте и управляйте заказами клиентов ({orders.length} заказов)
             </p>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
             <div className="relative group">
-              <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center">
+              <button className="w-full sm:w-auto bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center">
                 <Download className="w-4 h-4 mr-2" />
                 Экспорт
               </button>
@@ -340,35 +367,35 @@ const OrdersSection: React.FC = () => {
                 </button>
               </div>
             </div>
-            <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center">
+            <button className="w-full sm:w-auto border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-center">
               <Filter className="w-4 h-4 mr-2" />
               Фильтры
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-blue-600">{orders.length}</div>
-            <div className="text-sm text-blue-800">Всего заказов</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">{orders.length}</div>
+            <div className="text-xs sm:text-sm text-blue-800">Всего заказов</div>
           </div>
-          <div className="bg-yellow-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-yellow-600">
+          <div className="bg-yellow-50 rounded-lg p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-yellow-600">
               {orders.reduce((sum, order) => sum + order.total_items, 0)}
             </div>
-            <div className="text-sm text-yellow-800">Всего позиций</div>
+            <div className="text-xs sm:text-sm text-yellow-800">Всего позиций</div>
           </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="bg-green-50 rounded-lg p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">
               {orders.reduce((sum, order) => sum + order.total_price, 0).toLocaleString()} ₸
             </div>
-            <div className="text-sm text-green-800">Общая сумма</div>
+            <div className="text-xs sm:text-sm text-green-800">Общая сумма</div>
           </div>
-          <div className="bg-purple-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="bg-purple-50 rounded-lg p-3 sm:p-4">
+            <div className="text-xl sm:text-2xl font-bold text-purple-600">
               {orders.length > 0 ? Math.round(orders.reduce((sum, order) => sum + order.total_price, 0) / orders.length).toLocaleString() : 0} ₸
             </div>
-            <div className="text-sm text-purple-800">Средний чек</div>
+            <div className="text-xs sm:text-sm text-purple-800">Средний чек</div>
           </div>
         </div>
 
@@ -387,14 +414,33 @@ const OrdersSection: React.FC = () => {
               const manager = profiles[order.rep_id];
               const isExpanded = selectedOrder === order.id;
               const items = orderItems[order.id] || [];
+              const isNewOrder = !viewedOrders.has(order.id);
 
               return (
-                <div key={order.id} className="border border-gray-200 rounded-lg">
+                <div key={order.id} className={`border rounded-lg transition-all duration-300 ${
+                  isNewOrder 
+                    ? 'border-blue-300 bg-blue-50 shadow-md ring-1 ring-blue-200' 
+                    : 'border-gray-200 bg-white'
+                }`}>
                   <div 
-                    className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                    className={`p-4 cursor-pointer transition-colors ${
+                      isNewOrder 
+                        ? 'hover:bg-blue-100' 
+                        : 'hover:bg-gray-50'
+                    }`}
                     onClick={() => handleOrderClick(order.id)}
                   >
-                    <div className="flex items-center justify-between">
+                    {/* Индикатор нового заказа */}
+                    {isNewOrder && (
+                      <div className="flex items-center mb-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                        <span className="text-xs font-medium text-blue-700 uppercase tracking-wide">
+                          Новый заказ
+                        </span>
+                      </div>
+                    )}
+                    {/* Десктоп версия */}
+                    <div className="hidden lg:flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-4">
                           <div>
@@ -435,6 +481,74 @@ const OrdersSection: React.FC = () => {
                         </p>
                       </div>
                     </div>
+
+                    {/* Мобильная версия */}
+                    <div className="lg:hidden space-y-3">
+                      {/* Индикатор нового заказа для мобильной версии */}
+                      {isNewOrder && (
+                        <div className="flex items-center justify-center py-2 px-3 bg-blue-100 rounded-lg border border-blue-200">
+                          <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                          <span className="text-sm font-medium text-blue-700 uppercase tracking-wide">
+                            Новый заказ
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className={`font-medium text-base ${
+                            isNewOrder ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                            Заказ #{order.id.slice(0, 8)}...
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {new Date(order.created_at).toLocaleDateString('ru-RU')} {new Date(order.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-lg font-bold ${
+                            isNewOrder ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                            {order.total_price.toLocaleString()} ₸
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {order.total_items} позиций
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                          <span className="text-sm font-medium text-gray-700">Клиент:</span>
+                          <span className="text-sm text-gray-900 text-right flex-1 ml-2">
+                            {client?.name || 'Неизвестный клиент'}
+                          </span>
+                        </div>
+                        
+                        {client?.company_name && (
+                          <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                            <span className="text-sm font-medium text-gray-700">Компания:</span>
+                            <span className="text-sm text-gray-900 text-right flex-1 ml-2">
+                              {client.company_name}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                          <span className="text-sm font-medium text-gray-700">Менеджер:</span>
+                          <span className="text-sm text-gray-900 text-right flex-1 ml-2">
+                            {manager?.name || 'Неизвестный менеджер'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                          <span className="text-sm font-medium text-gray-700">Доставка:</span>
+                          <span className="text-sm text-gray-900 text-right flex-1 ml-2">
+                            {order.delivery_date}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
                   {isExpanded && (
@@ -443,20 +557,52 @@ const OrdersSection: React.FC = () => {
                       {items.length > 0 ? (
                         <div className="space-y-2">
                           {items.map((item) => (
-                            <div key={item.id} className="flex justify-between items-center py-2 px-3 bg-white rounded border">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{item.product_name}</p>
-                                {item.comment && (
-                                  <p className="text-sm text-gray-500">Комментарий: {item.comment}</p>
-                                )}
+                            <div key={item.id} className="bg-white rounded border">
+                              {/* Десктоп версия позиций */}
+                              <div className="hidden sm:flex justify-between items-center py-2 px-3">
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900">{item.product_name}</p>
+                                  {item.comment && (
+                                    <p className="text-sm text-gray-500">Комментарий: {item.comment}</p>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm text-gray-900">
+                                    {item.quantity} {item.unit} × {item.price.toLocaleString()} ₸
+                                  </p>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    = {(item.quantity * item.price).toLocaleString()} ₸
+                                  </p>
+                                </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-sm text-gray-900">
-                                  {item.quantity} {item.unit} × {item.price.toLocaleString()} ₸
-                                </p>
-                                <p className="text-sm font-medium text-gray-900">
-                                  = {(item.quantity * item.price).toLocaleString()} ₸
-                                </p>
+
+                              {/* Мобильная версия позиций */}
+                              <div className="sm:hidden p-3 space-y-2">
+                                <p className="font-medium text-gray-900">{item.product_name}</p>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-600">Количество:</span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {item.quantity} {item.unit}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-600">Цена за единицу:</span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {item.price.toLocaleString()} ₸
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center font-medium border-t pt-2">
+                                  <span className="text-sm text-gray-700">Итого:</span>
+                                  <span className="text-base font-bold text-gray-900">
+                                    {(item.quantity * item.price).toLocaleString()} ₸
+                                  </span>
+                                </div>
+                                {item.comment && (
+                                  <div className="pt-2 border-t">
+                                    <p className="text-sm text-gray-600">Комментарий:</p>
+                                    <p className="text-sm text-gray-900">{item.comment}</p>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
