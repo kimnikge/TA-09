@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, User, Package, Send, Eye, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { generateUUID } from '../utils/uuid';
 
 interface Product {
   id: string; // UUID в Supabase
@@ -181,57 +182,19 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
     });
   };
 
-  const addNewClient = async () => {
-    if (!newClient.name || !newClient.address) {
-      alert('Заполните все поля для нового клиента');
-      return;
-    }
-
-    try {
-      // Сохраняем клиента в базу данных
-      const { data: savedClient, error: clientError } = await supabase
-        .from('clients')
-        .insert([
-          {
-            name: newClient.name,
-            address: newClient.address,
-            company_name: newClient.name, // Используем имя как название компании
-            seller_name: 'Не указано', // Значение по умолчанию
-            created_by: currentAgent.id
-          }
-        ])
-        .select()
-        .single();
-
-      if (clientError) {
-        console.error('❌ Ошибка создания клиента:', clientError);
-        alert(`Ошибка создания клиента: ${clientError.message}`);
-        return;
-      }
-
-      if (!savedClient) {
-        alert('Клиент не был создан');
-        return;
-      }
-
-      // Добавляем нового клиента в локальный список
+  const addNewClient = () => {
+    if (newClient.name && newClient.address) {
+      const newId = generateUUID(); // Генерируем UUID совместимым способом
       const newClientData: Client = {
-        id: savedClient.id,
-        name: savedClient.name,
-        address: savedClient.address,
-        created_by: savedClient.created_by,
-        created_at: savedClient.created_at
+        id: newId,
+        name: newClient.name,
+        address: newClient.address
       };
       
-      setClients(prev => [...prev, newClientData]);
-      setSelectedClient(savedClient.id);
+      clients.push(newClientData);
+      setSelectedClient(newId);
       setShowNewClientModal(false);
       setNewClient({ name: '', address: '' });
-      
-      console.log('✅ Клиент успешно создан:', savedClient);
-    } catch (error) {
-      console.error('❌ Неожиданная ошибка при создании клиента:', error);
-      alert('Произошла ошибка при создании клиента');
     }
   };
 

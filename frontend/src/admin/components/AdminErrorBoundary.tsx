@@ -5,11 +5,14 @@ interface ErrorBoundaryState {
   error?: Error;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface AdminErrorBoundaryProps {}
+
 class AdminErrorBoundary extends React.Component<
-  React.PropsWithChildren<{}>,
+  React.PropsWithChildren<AdminErrorBoundaryProps>,
   ErrorBoundaryState
 > {
-  constructor(props: React.PropsWithChildren<{}>) {
+  constructor(props: React.PropsWithChildren<AdminErrorBoundaryProps>) {
     super(props);
     this.state = { hasError: false };
   }

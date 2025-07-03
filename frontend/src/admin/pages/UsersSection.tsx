@@ -32,7 +32,7 @@ const UsersSection: React.FC = () => {
     console.error('❌ UsersSection: Ошибка в компоненте:', error);
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <h3 className="text-red-800 font-medium mb-2">Ошибка загрузки агентов</h3>
+        <h3 className="text-red-800 font-medium mb-2">Ошибка загрузки пользователей</h3>
         <p className="text-red-600 text-sm mb-4">{error}</p>
         <button 
           onClick={() => {
@@ -98,9 +98,9 @@ const UsersSection: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
-            <h2 className="text-lg font-medium text-gray-900">Управление агентами</h2>
+            <h2 className="text-lg font-medium text-gray-900">Управление пользователями</h2>
             <p className="text-sm text-gray-500 mt-1">
-              Просматривайте и управляйте агентами системы
+              Просматривайте и управляйте пользователями системы
             </p>
           </div>
           <div className="flex space-x-2 mt-4 sm:mt-0">
@@ -161,7 +161,7 @@ const UsersSection: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-blue-50 rounded-lg p-4">
             <div className="text-2xl font-bold text-blue-600">{users.length}</div>
-            <div className="text-sm text-blue-800">Всего агентов</div>
+            <div className="text-sm text-blue-800">Всего пользователей</div>
           </div>
           <div className="bg-green-50 rounded-lg p-4">
             <div className="text-2xl font-bold text-green-600">

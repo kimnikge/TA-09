@@ -103,35 +103,10 @@ input, textarea, select {
   }
 }
 
-/* Мобильные стили для админ-панели */
-@media (max-width: 767px) {
-  /* Увеличение размера кнопок для мобильных */
-  .mobile-friendly-btn {
-    min-height: 44px; /* Минимальная высота кнопок для тач-устройств */
-    padding: 12px 16px;
-  }
-  
-  /* Увеличение размера инпутов */
-  .mobile-friendly-input {
-    min-height: 44px;
-    font-size: 16px; /* Предотвращает зум на iOS */
-  }
-  
-  /* Улучшенные отступы для мобильных */
-  .mobile-spacing {
-    padding: 16px;
-  }
-  
-  /* Фиксированная высота для модальных окон */
-  .mobile-modal {
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-}
-
-/* Стили для touch-устройств */
+/* Улучшенные стили для сенсорных устройств */
 @media (hover: none) and (pointer: coarse) {
-  .hover-area {
-    padding: 8px; /* Увеличенная область касания */
+  button, a, [role="button"] {
+    min-height: 44px; /* Рекомендуемый размер touch target */
+    min-width: 44px;
   }
 }

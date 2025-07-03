@@ -39,17 +39,9 @@ function App() {
         // Проверить роль пользователя в таблице profiles
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role, approved')
+          .select('role')
           .eq('id', currentUser.id)
           .single()
-        
-        // Проверяем, что пользователь одобрен
-        if (profile && !profile.approved) {
-          console.log('Пользователь не одобрен, выполняем выход')
-          await supabase.auth.signOut()
-          setAuthError('Ваш аккаунт ожидает одобрения администратора')
-          return
-        }
         
         if (profile?.role === 'admin') {
           setUserRole('admin')
@@ -99,25 +91,11 @@ function App() {
 
     try {
       if (authMode === 'signin') {
-        const { data: authData, error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
         if (error) throw error
-        
-        // После успешного входа проверяем статус одобрения
-        if (authData.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('approved, role')
-            .eq('id', authData.user.id)
-            .single()
-          
-          if (profile && !profile.approved) {
-            await supabase.auth.signOut()
-            throw new Error('Ваш аккаунт ожидает одобрения администратора')
-          }
-        }
       } else {
         // Регистрация нового пользователя
         const { data, error } = await supabase.auth.signUp({
