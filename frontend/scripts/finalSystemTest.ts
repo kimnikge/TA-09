@@ -60,6 +60,7 @@ async function finalSystemTest() {
     console.log(`🏢 Всего клиентов: ${clients?.length || 0}`);
 
     // Группировка клиентов по создателю
+    type Client = NonNullable<typeof clients>[0];
     const clientsByCreator = clients?.reduce((acc, client) => {
       const creatorId = client.created_by || 'unknown';
       if (!acc[creatorId]) {
@@ -67,10 +68,10 @@ async function finalSystemTest() {
       }
       acc[creatorId].push(client);
       return acc;
-    }, {} as Record<string, typeof clients>) || {};
+    }, {} as Record<string, Client[]>) || {};
 
     console.log('\n📊 Распределение клиентов по создателям:');
-    Object.entries(clientsByCreator).forEach(([creatorId, creatorClients]) => {
+    Object.entries(clientsByCreator).forEach(([creatorId, creatorClients]: [string, Client[]]) => {
       const creator = profiles?.find(p => p.id === creatorId);
       const creatorName = creator ? creator.name : 'Неизвестный';
       console.log(`   ${creatorName}: ${creatorClients.length} клиентов`);
