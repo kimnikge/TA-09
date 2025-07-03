@@ -1,8 +1,9 @@
 import { useState, useEffect, lazy, Suspense, memo } from 'react'
-import { supabase } from './supabaseClient'
+import { supabase, clearInvalidTokens, getSessionSafely } from './supabaseClient'
 import type { User } from '@supabase/supabase-js'
 import { BarChart3, Package, Users, LogOut, Menu, X } from 'lucide-react'
-import './App.css'
+import { forceAuthCleanup } from './utils/authHelpers'
+import { disableAllRealtime } from './utils/disableWebSocket'
 
 // Lazy loading компонентов для уменьшения первоначального бандла
 const AdminAccess = lazy(() => import('./admin/AdminAccess'))
@@ -18,6 +19,16 @@ const LoadingSpinner = memo(() => (
 ))
 
 function App() {
+  // Отключаем все WebSocket соединения для предотвращения ошибок
+  useEffect(() => {
+    const restoreRealtime = disableAllRealtime()
+    
+    // Очистка при размонтировании компонента
+    return () => {
+      restoreRealtime()
+    }
+  }, [])
+
   const [currentPage, setCurrentPage] = useState<'order' | 'clients' | 'admin'>('order')
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,6 +44,26 @@ function App() {
   const [authError, setAuthError] = useState('')
 
   useEffect(() => {
+    // Глобальный обработчик ошибок для Supabase
+    const handleGlobalError = (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      
+      if (errorMessage.includes('Invalid Refresh Token') || 
+          errorMessage.includes('refresh_token_not_found') ||
+          errorMessage.includes('Auth session missing')) {
+        console.warn('🔧 Обнаружена ошибка аутентификации, выполняется очистка...')
+        clearInvalidTokens()
+      }
+    }
+
+    // Обработчик для промисов
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      handleGlobalError(event.reason)
+    }
+
+    // Добавляем слушатель глобальных ошибок
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+
     // Получить текущего пользователя и его роль
     const getUserAndRole = async (currentUser: User | null) => {
       if (currentUser) {
@@ -67,20 +98,20 @@ function App() {
     // Получить текущего пользователя
     const getUser = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser()
+        // Используем безопасное получение сессии
+        const session = await getSessionSafely()
         
-        if (error) {
-          console.warn('Ошибка аутентификации:', error)
-          // Очищаем некорректную сессию
-          await supabase.auth.signOut()
+        if (!session?.user) {
           setUser(null)
           setUserRole('sales_rep')
         } else {
-          setUser(user)
-          await getUserAndRole(user)
+          setUser(session.user)
+          await getUserAndRole(session.user)
         }
       } catch (error) {
         console.warn('Ошибка при получении пользователя:', error)
+        // Дополнительная очистка при критических ошибках
+        await clearInvalidTokens()
         setUser(null)
         setUserRole('sales_rep')
       } finally {
@@ -92,29 +123,53 @@ function App() {
 
     // Слушать изменения авторизации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const currentUser = session?.user ?? null
-      
-      // Обрабатываем событие выхода из системы
-      if (event === 'SIGNED_OUT') {
-        setUser(null)
-        setUserRole('sales_rep')
-        return
+      try {
+        const currentUser = session?.user ?? null
+        
+        console.log('🔄 Auth state change:', event, !!session)
+        
+        // Обрабатываем событие выхода из системы
+        if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setUserRole('sales_rep')
+          return
+        }
+        
+        // Обрабатываем ошибки токена - очищаем состояние
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          console.warn('Ошибка обновления токена, очищаем состояние')
+          const wasCleared = await clearInvalidTokens()
+          if (wasCleared) {
+            setUser(null)
+            setUserRole('sales_rep')
+          }
+          return
+        }
+        
+        // Если вход успешен, но пользователя нет - это ошибка
+        if (event === 'SIGNED_IN' && !currentUser) {
+          console.warn('Недействительная сессия при входе')
+          await clearInvalidTokens()
+          return
+        }
+        
+        setUser(currentUser)
+        await getUserAndRole(currentUser)
+      } catch (error) {
+        console.error('Ошибка в onAuthStateChange:', error)
+        const wasCleared = await clearInvalidTokens()
+        if (wasCleared) {
+          setUser(null)
+          setUserRole('sales_rep')
+        }
       }
-      
-      // Обрабатываем ошибки токена
-      if (event === 'TOKEN_REFRESHED' && !session) {
-        console.warn('Ошибка обновления токена, выходим из системы')
-        await supabase.auth.signOut()
-        setUser(null)
-        setUserRole('sales_rep')
-        return
-      }
-      
-      setUser(currentUser)
-      await getUserAndRole(currentUser)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      // Удаляем слушатель глобальных ошибок
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
   }, [])
 
   const currentUser = {
@@ -135,18 +190,29 @@ function App() {
 
     try {
       // Очищаем возможные некорректные токены перед входом
-      const { data: currentSession } = await supabase.auth.getSession()
-      if (currentSession.session && authMode === 'signin') {
-        // Если есть сессия, но пользователь пытается войти снова, очищаем старую сессию
-        await supabase.auth.signOut()
-      }
+      await clearInvalidTokens()
 
       if (authMode === 'signin') {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
-        if (error) throw error
+        
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('Неверный email или пароль')
+          } else if (error.message.includes('Email not confirmed')) {
+            throw new Error('Подтвердите email адрес')
+          } else {
+            throw error
+          }
+        }
+        
+        if (!data.user) {
+          throw new Error('Не удалось войти в систему')
+        }
+        
+        console.log('✅ Успешный вход в систему')
       } else {
         // Регистрация нового пользователя
         const { data, error } = await supabase.auth.signUp({
@@ -301,6 +367,18 @@ function App() {
             {authError && (
               <div className="bg-red-50 border border-red-200 rounded-md p-3">
                 <p className="text-sm text-red-600">{authError}</p>
+                {authError.includes('Invalid Refresh Token') && (
+                  <button
+                    onClick={async () => {
+                      await forceAuthCleanup()
+                      setAuthError('')
+                      window.location.reload()
+                    }}
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Очистить данные и перезагрузить
+                  </button>
+                )}
               </div>
             )}
 
@@ -335,6 +413,21 @@ function App() {
                 ? 'Нет аккаунта? Зарегистрироваться'
                 : 'Уже есть аккаунт? Войти'
               }
+            </button>
+          </div>
+          
+          {/* Кнопка экстренной очистки токенов */}
+          <div className="mt-2 text-center border-t pt-3">
+            <button
+              onClick={async () => {
+                if (confirm('Это действие очистит все данные аутентификации и перезагрузит страницу. Продолжить?')) {
+                  await forceAuthCleanup()
+                  window.location.reload()
+                }
+              }}
+              className="text-xs text-gray-500 hover:text-gray-700 underline"
+            >
+              Проблемы с входом? Очистить данные
             </button>
           </div>
         </div>
