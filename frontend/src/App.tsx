@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense, memo } from 'react'
 import { supabase } from './supabaseClient'
 import type { User } from '@supabase/supabase-js'
 import { BarChart3, Package, Users, LogOut, Menu, X } from 'lucide-react'
@@ -8,6 +8,14 @@ import './App.css'
 const AdminAccess = lazy(() => import('./admin/AdminAccess'))
 const OrderPage = lazy(() => import('./pages/OrderPage'))
 const ClientsPage = lazy(() => import('./pages/ClientsPage'))
+
+// Мемоизированный компонент загрузки
+const LoadingSpinner = memo(() => (
+  <div className="flex items-center justify-center h-64">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    <span className="ml-2 text-gray-600">Загрузка...</span>
+  </div>
+))
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'order' | 'clients' | 'admin'>('order')
@@ -392,7 +400,7 @@ function App() {
 
       {/* Основное содержимое - строгий условный рендеринг */}
       <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
-        <Suspense fallback={<div className="flex justify-center items-center py-12"><div className="text-lg text-gray-600">Загрузка...</div></div>}>
+        <Suspense fallback={<LoadingSpinner />}>
           {currentPage === 'order' && (
             <OrderPage currentUser={currentUser} userRole={userRole} />
           )}
