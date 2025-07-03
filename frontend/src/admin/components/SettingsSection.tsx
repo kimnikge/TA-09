@@ -7,20 +7,20 @@ const SettingsSection: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-6">
           <div>
             <h2 className="text-lg font-medium text-gray-900">Настройки системы</h2>
             <p className="text-sm text-gray-500 mt-1">
               Конфигурация и управление системой
             </p>
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+          <button className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center">
             <Save className="w-4 h-4 mr-2" />
             Сохранить
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
           <div className="space-y-6">
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center mb-4">
@@ -36,7 +36,7 @@ const SettingsSection: React.FC = () => {
                     type="text"
                     value="postgresql://..."
                     readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm"
                   />
                 </div>
                 <div>
@@ -57,7 +57,7 @@ const SettingsSection: React.FC = () => {
                 <h3 className="text-md font-medium text-gray-900">Безопасность</h3>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                   <span className="text-sm font-medium text-gray-700">
                     Двухфакторная аутентификация
                   </span>
@@ -66,11 +66,11 @@ const SettingsSection: React.FC = () => {
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                   <span className="text-sm font-medium text-gray-700">
                     Автоматический выход
                   </span>
-                  <select className="border border-gray-300 rounded px-2 py-1 text-sm">
+                  <select className="border border-gray-300 rounded px-3 py-2 text-sm bg-white w-full sm:w-auto">
                     <option value="30">30 минут</option>
                     <option value="60">1 час</option>
                     <option value="120">2 часа</option>
@@ -87,7 +87,7 @@ const SettingsSection: React.FC = () => {
                 <h3 className="text-md font-medium text-gray-900">Уведомления</h3>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                   <span className="text-sm font-medium text-gray-700">
                     Email уведомления
                   </span>
