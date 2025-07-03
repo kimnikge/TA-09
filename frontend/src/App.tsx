@@ -36,16 +36,27 @@ function App() {
     // Получить текущего пользователя и его роль
     const getUserAndRole = async (currentUser: User | null) => {
       if (currentUser) {
-        // Проверить роль пользователя в таблице profiles
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', currentUser.id)
-          .single()
-        
-        if (profile?.role === 'admin') {
-          setUserRole('admin')
-        } else {
+        try {
+          // Проверить роль пользователя в таблице profiles
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .single()
+          
+          if (error) {
+            console.warn('Ошибка получения профиля пользователя:', error)
+            setUserRole('sales_rep') // Роль по умолчанию
+            return
+          }
+          
+          if (profile?.role === 'admin') {
+            setUserRole('admin')
+          } else {
+            setUserRole('sales_rep')
+          }
+        } catch (error) {
+          console.warn('Ошибка при получении роли пользователя:', error)
           setUserRole('sales_rep')
         }
       } else {
@@ -55,17 +66,50 @@ function App() {
 
     // Получить текущего пользователя
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      await getUserAndRole(user)
-      setLoading(false)
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        
+        if (error) {
+          console.warn('Ошибка аутентификации:', error)
+          // Очищаем некорректную сессию
+          await supabase.auth.signOut()
+          setUser(null)
+          setUserRole('sales_rep')
+        } else {
+          setUser(user)
+          await getUserAndRole(user)
+        }
+      } catch (error) {
+        console.warn('Ошибка при получении пользователя:', error)
+        setUser(null)
+        setUserRole('sales_rep')
+      } finally {
+        setLoading(false)
+      }
     }
 
     getUser()
 
     // Слушать изменения авторизации
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null
+      
+      // Обрабатываем событие выхода из системы
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setUserRole('sales_rep')
+        return
+      }
+      
+      // Обрабатываем ошибки токена
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.warn('Ошибка обновления токена, выходим из системы')
+        await supabase.auth.signOut()
+        setUser(null)
+        setUserRole('sales_rep')
+        return
+      }
+      
       setUser(currentUser)
       await getUserAndRole(currentUser)
     })
@@ -90,6 +134,13 @@ function App() {
     setAuthError('')
 
     try {
+      // Очищаем возможные некорректные токены перед входом
+      const { data: currentSession } = await supabase.auth.getSession()
+      if (currentSession.session && authMode === 'signin') {
+        // Если есть сессия, но пользователь пытается войти снова, очищаем старую сессию
+        await supabase.auth.signOut()
+      }
+
       if (authMode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
