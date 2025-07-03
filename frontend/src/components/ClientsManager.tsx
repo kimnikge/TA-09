@@ -34,7 +34,7 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
     try {
       setLoading(true);
       
-      let query = supabase
+      const query = supabase
         .from('clients')
         .select(`
           id, 
@@ -45,10 +45,11 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
         `)
         .order('created_at', { ascending: false });
 
-      // Если это торговый представитель, показываем только его клиентов
-      if (userRole === 'sales_rep') {
-        query = query.eq('created_by', currentUser.id);
-      }
+      // Для торгового представителя показываем всех клиентов
+      // (ранее показывали только созданных им, но это ограничивало функционал)
+      // if (userRole === 'sales_rep') {
+      //   query = query.eq('created_by', currentUser.id);
+      // }
 
       const { data, error } = await query;
 
@@ -70,7 +71,7 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
     } finally {
       setLoading(false);
     }
-  }, [currentUser.id, userRole]);
+  }, []);
 
   useEffect(() => {
     loadClients();
@@ -143,7 +144,6 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
           <h1 className="text-2xl font-bold text-gray-900">Торговые точки</h1>
           <p className="text-gray-600 mt-1">
             Управление клиентами и торговыми точками
-            {userRole === 'sales_rep' && ` (${clients.length} ваших точек)`}
           </p>
         </div>
         
@@ -301,11 +301,6 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
               <p className="text-sm text-blue-800">
                 Всего торговых точек: <span className="font-semibold">{clients.length}</span>
               </p>
-              {userRole === 'sales_rep' && (
-                <p className="text-sm text-blue-600">
-                  Добавлено вами: {clients.filter(c => c.created_by === currentUser.id).length}
-                </p>
-              )}
             </div>
             <Building className="w-8 h-8 text-blue-600" />
           </div>

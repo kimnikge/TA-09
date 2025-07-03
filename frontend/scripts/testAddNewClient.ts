@@ -145,16 +145,12 @@ async function testAddClientProcess(salesRep: SalesRep) {
   const newClientData = {
     name: `Тестовый Магазин ${Date.now()}`,
     address: 'г. Алматы, ул. Тестовая, 123',
-    phone: '+7 (777) 123-45-67',
-    email: 'test@example.com',
     created_by: salesRep.id
   };
 
   console.log('📝 Данные клиента для добавления:', {
     name: newClientData.name,
     address: newClientData.address,
-    phone: newClientData.phone,
-    email: newClientData.email,
     created_by: `${salesRep.name} (${salesRep.id})`
   });
 
@@ -212,7 +208,7 @@ async function testAddClientProcess(salesRep: SalesRep) {
   console.log('\n6️⃣ Получение списка клиентов торгового представителя...');
   const { data: salesRepClients, error: listError } = await supabase
     .from('clients')
-    .select('id, name, address, phone, email, created_at')
+    .select('id, name, address, created_at')
     .eq('created_by', salesRep.id)
     .order('created_at', { ascending: false });
 
@@ -222,13 +218,12 @@ async function testAddClientProcess(salesRep: SalesRep) {
 
   console.log(`✅ Найдено ${salesRepClients.length} клиентов у торгового представителя:`);
   salesRepClients.forEach((client, index) => {
-    console.log(`   ${index + 1}. ${client.name} - ${client.address} (тел: ${client.phone || 'не указан'})`);
+    console.log(`   ${index + 1}. ${client.name} - ${client.address}`);
   });
 
   // 7. Тестируем обновление данных клиента
   console.log('\n7️⃣ Тестирование обновления данных клиента...');
   const updatedData = {
-    phone: '+7 (777) 987-65-43 (обновлено)',
     address: newClient.address + ' (обновлено)'
   };
 

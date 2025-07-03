@@ -28,6 +28,7 @@ function App() {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState('')
 
@@ -96,11 +97,73 @@ function App() {
         })
         if (error) throw error
       } else {
-        const { error } = await supabase.auth.signUp({
+        // Регистрация нового пользователя
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              full_name: fullName,
+            }
+          }
         })
+        
         if (error) throw error
+        
+        // Если пользователь успешно создан, пытаемся создать профиль
+        if (data.user) {
+          console.log('Пользователь создан, создаем профиль...', data.user.id)
+          
+          // Небольшая задержка для синхронизации с auth.users
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // Пытаемся создать профиль несколько раз
+          let profileCreated = false
+          let attempts = 0
+          const maxAttempts = 3
+          
+          while (!profileCreated && attempts < maxAttempts) {
+            attempts++
+            console.log(`Попытка создания профиля ${attempts}/${maxAttempts}`)
+            
+            try {
+              const { data: newProfile, error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: data.user.id,
+                  email: email,
+                  name: fullName,
+                  role: 'sales_rep',
+                  approved: false
+                })
+                .select()
+                .single()
+              
+              if (profileError) {
+                console.error(`Ошибка создания профиля (попытка ${attempts}):`, profileError)
+                
+                if (attempts === maxAttempts) {
+                  // Последняя попытка неудачна
+                  setAuthError(`Пользователь зарегистрирован, но не удалось создать профиль. Код ошибки: ${profileError.code}. Попробуйте войти в систему позже или обратитесь к администратору.`)
+                  break
+                } else {
+                  // Ждем перед следующей попыткой
+                  await new Promise(resolve => setTimeout(resolve, 2000))
+                }
+              } else {
+                console.log('Профиль создан успешно:', newProfile)
+                profileCreated = true
+                // Показываем сообщение об успешной регистрации
+                setAuthError('')
+              }
+            } catch (err) {
+              console.error(`Неожиданная ошибка при создании профиля (попытка ${attempts}):`, err)
+              if (attempts === maxAttempts) {
+                setAuthError('Произошла неожиданная ошибка при создании профиля. Обратитесь к администратору.')
+              }
+            }
+          }
+        }
       }
     } catch (error: unknown) {
       setAuthError(error instanceof Error ? error.message : 'Произошла ошибка')
@@ -135,6 +198,24 @@ function App() {
           </div>
 
           <form onSubmit={handleAuth} className="space-y-4">
+            {authMode === 'signup' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Полное имя
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Иван Иванов"
+                  required
+                  disabled={authLoading}
+                  minLength={2}
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -193,6 +274,9 @@ function App() {
               onClick={() => {
                 setAuthMode(authMode === 'signin' ? 'signup' : 'signin')
                 setAuthError('')
+                setEmail('')
+                setPassword('')
+                setFullName('')
               }}
               className="text-sm text-blue-600 hover:text-blue-800"
             >
