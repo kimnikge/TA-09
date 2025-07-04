@@ -4,31 +4,28 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://olutrxiazrmanrgzzwmb.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhenJtYW5yZ3p6d21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzMwMjEsImV4cCI6MjA2NjQ0OTAyMX0.qxU_1Fjk4Mu9vMSfEI4jSGm3yYhh9WbmlSEFttOMKiM'
 
-// Отладочная информация
-console.log('🔧 Настройка Supabase клиента...')
-console.log('📍 Supabase URL:', supabaseUrl)
-console.log('🔑 Anon Key (первые 20 символов):', supabaseAnonKey?.substring(0, 20) + '...')
-console.log('🔑 Anon Key length:', supabaseAnonKey?.length || 0)
-console.log('🌍 Environment:', import.meta.env.MODE)
-console.log('🔗 All env vars:', Object.keys(import.meta.env))
+// Функция проверки конфигурации
+function validateConfig() {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ Отсутствуют переменные окружения Supabase')
+    throw new Error('Supabase configuration missing')
+  }
 
-// Проверяем корректность ключа
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Отсутствуют переменные окружения Supabase')
-  throw new Error('Supabase configuration missing')
+  if (!supabaseUrl.startsWith('https://')) {
+    console.error('❌ Некорректный URL Supabase')
+    throw new Error('Invalid Supabase URL')
+  }
+
+  if (supabaseAnonKey.length < 100) {
+    console.error('❌ Некорректный ключ Supabase (слишком короткий)')
+    throw new Error('Invalid Supabase anon key')
+  }
 }
 
-if (!supabaseUrl.startsWith('https://')) {
-  console.error('❌ Некорректный URL Supabase')
-  throw new Error('Invalid Supabase URL')
-}
+// Проверяем конфигурацию
+validateConfig()
 
-if (supabaseAnonKey.length < 100) {
-  console.error('❌ Некорректный ключ Supabase (слишком короткий)')
-  throw new Error('Invalid Supabase anon key')
-}
-
-// Создаем клиента
+// Создаем и экспортируем клиента на верхнем уровне
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -47,6 +44,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     }
   }
 })
+
+// Отладочная информация
+console.log('🔧 Настройка Supabase клиента...')
+console.log('📍 Supabase URL:', supabaseUrl)
+console.log('🔑 Anon Key (первые 20 символов):', supabaseAnonKey?.substring(0, 20) + '...')
+console.log('🔑 Anon Key length:', supabaseAnonKey?.length || 0)
+console.log('🌍 Environment:', import.meta.env.MODE)
+console.log('🔗 All env vars:', Object.keys(import.meta.env))
 
 // Тестируем подключение
 supabase.from('profiles').select('count', { count: 'exact', head: true })
