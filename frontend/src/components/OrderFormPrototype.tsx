@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, User, Package, Send, Eye, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { generateUUID } from '../utils/uuid';
 
 interface Product {
   id: string; // UUID в Supabase
@@ -182,19 +181,61 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
     });
   };
 
-  const addNewClient = () => {
-    if (newClient.name && newClient.address) {
-      const newId = generateUUID(); // Генерируем UUID совместимым способом
+  const addNewClient = async () => {
+    if (!newClient.name || !newClient.address) {
+      alert('Пожалуйста, заполните название и адрес клиента');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Создаем клиента в базе данных
+      const { data: createdClient, error: clientError } = await supabase
+        .from('clients')
+        .insert([
+          {
+            name: newClient.name.trim(),
+            address: newClient.address.trim(),
+            created_by: currentAgent.id
+          }
+        ])
+        .select()
+        .single();
+
+      if (clientError) {
+        console.error('❌ Ошибка создания клиента:', clientError);
+        throw new Error(`Ошибка создания клиента: ${clientError.message}`);
+      }
+
+      if (!createdClient) {
+        throw new Error('Клиент не был создан');
+      }
+
+      console.log('✅ Клиент успешно создан:', createdClient);
+
+      // Добавляем нового клиента в локальный список
       const newClientData: Client = {
-        id: newId,
-        name: newClient.name,
-        address: newClient.address
+        id: createdClient.id,
+        name: createdClient.name,
+        address: createdClient.address,
+        created_by: createdClient.created_by,
+        created_at: createdClient.created_at
       };
-      
-      clients.push(newClientData);
-      setSelectedClient(newId);
+
+      setClients(prev => [...prev, newClientData]);
+      setSelectedClient(createdClient.id);
       setShowNewClientModal(false);
       setNewClient({ name: '', address: '' });
+      
+      alert('Клиент успешно создан!');
+      
+    } catch (error) {
+      console.error('❌ Ошибка создания клиента:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      alert(`Ошибка создания клиента: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -208,23 +249,48 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
       alert('Ошибка: не удалось определить пользователя');
       return;
     }
+
+    // Проверяем, что выбранный клиент существует в списке
+    const clientExists = clients.find(c => c.id === selectedClient);
+    if (!clientExists) {
+      alert('Ошибка: выбранный клиент не найден. Попробуйте обновить страницу.');
+      return;
+    }
     
     setIsSubmitting(true);
     setSubmitStatus(null);
     
     try {
-      // 1. Создать заказ
+      console.log('🔄 Создание заказа для клиента:', clientExists.name, 'ID:', selectedClient);
+      
+      // 1. Проверяем, что клиент существует в базе данных
+      const { data: clientCheck, error: clientCheckError } = await supabase
+        .from('clients')
+        .select('id, name')
+        .eq('id', selectedClient)
+        .single();
+
+      if (clientCheckError || !clientCheck) {
+        console.error('❌ Клиент не найден в базе данных:', clientCheckError);
+        throw new Error('Выбранный клиент не найден в базе данных. Попробуйте создать клиента заново.');
+      }
+
+      console.log('✅ Клиент найден в базе данных:', clientCheck.name);
+
+      // 2. Создать заказ
+      const orderData = {
+        rep_id: currentAgent.id,
+        client_id: selectedClient,
+        delivery_date: deliveryDate,
+        total_items: getTotalItems(),
+        total_price: getTotalPrice()
+      };
+
+      console.log('🔄 Создание заказа с данными:', orderData);
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .insert([
-          {
-            rep_id: currentAgent.id,
-            client_id: selectedClient, // UUID строка, не число
-            delivery_date: deliveryDate,
-            total_items: getTotalItems(),
-            total_price: getTotalPrice(),
-          }
-        ])
+        .insert([orderData])
         .select()
         .single();
 
@@ -236,6 +302,8 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
       if (!order) {
         throw new Error('Заказ не был создан');
       }
+
+      console.log('✅ Заказ успешно создан:', order.id);
 
       // 2. Добавить позиции заказа
       const items = Object.entries(cart).map(([productId, qty]) => {
@@ -605,10 +673,17 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
               </button>
               <button 
                 onClick={addNewClient}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                disabled={!newClient.name || !newClient.address}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!newClient.name || !newClient.address || isSubmitting}
               >
-                Добавить
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Создание...
+                  </div>
+                ) : (
+                  'Добавить'
+                )}
               </button>
             </div>
           </div>
