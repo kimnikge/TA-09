@@ -6,8 +6,14 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIU
 
 // Функция проверки конфигурации
 function validateConfig() {
+  console.log('🔍 Проверка конфигурации Supabase...')
+  console.log('URL:', supabaseUrl)
+  console.log('Key length:', supabaseAnonKey?.length)
+  
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Отсутствуют переменные окружения Supabase')
+    console.error('URL:', supabaseUrl)
+    console.error('Key:', supabaseAnonKey ? 'есть' : 'отсутствует')
     throw new Error('Supabase configuration missing')
   }
 
@@ -18,8 +24,11 @@ function validateConfig() {
 
   if (supabaseAnonKey.length < 100) {
     console.error('❌ Некорректный ключ Supabase (слишком короткий)')
+    console.error('Длина ключа:', supabaseAnonKey.length)
     throw new Error('Invalid Supabase anon key')
   }
+  
+  console.log('✅ Конфигурация Supabase корректна')
 }
 
 // Проверяем конфигурацию
