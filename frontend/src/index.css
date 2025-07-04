@@ -15,6 +15,9 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+  
+  /* CSS переменные для viewport height на мобильных */
+  --vh: 1vh;
 }
 
 * {
@@ -26,6 +29,13 @@ html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   font-size: 16px; /* Базовый размер шрифта для лучшей читаемости на мобильных */
+  /* Предотвращаем зум при фокусе на input на iOS */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 html, body {
@@ -44,10 +54,20 @@ body {
   min-height: 100vh;
   /* Улучшенная поддержка мобильных viewport */
   min-height: -webkit-fill-available;
+  min-height: calc(var(--vh, 1vh) * 100);
+  /* Исправления для мобильных браузеров */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+  /* Предотвращаем автокоррекцию и автоматические заглавные буквы */
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
 #root {
   width: 100%;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: calc(var(--vh, 1vh) * 100);
   height: 100%;
   margin: 0;
   padding: 0;
@@ -103,10 +123,126 @@ input, textarea, select {
   }
 }
 
-/* Улучшенные стили для сенсорных устройств */
+/* Специальные стили для мобильных устройств */
+@media (max-width: 768px) {
+  body {
+    /* Увеличиваем размер шрифта для предотвращения зума на iOS */
+    font-size: 16px;
+  }
+  
+  input, select, textarea {
+    /* Предотвращаем зум при фокусе на input элементах на iOS */
+    font-size: 16px !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  
+  button {
+    /* Улучшаем отзывчивость кнопок на мобильных */
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    touch-action: manipulation;
+  }
+}
+
+/* Стили для Safari на iOS */
+@supports (-webkit-touch-callout: none) {
+  body {
+    /* Исправляем проблемы с viewport на iOS Safari */
+    min-height: -webkit-fill-available;
+  }
+  
+  #root {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Стили для предотвращения horizontal scroll */
+* {
+  max-width: 100%;
+}
+
+.container, .max-w-7xl, .max-w-6xl, .max-w-5xl, .max-w-4xl {
+  width: 100%;
+  max-width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (max-width: 640px) {
+  .container, .max-w-7xl, .max-w-6xl, .max-w-5xl, .max-w-4xl {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Улучшения для touch устройств */
 @media (hover: none) and (pointer: coarse) {
-  button, a, [role="button"] {
-    min-height: 44px; /* Рекомендуемый размер touch target */
+  /* Стили для устройств с touch экранами */
+  button, .btn, [role="button"] {
+    min-height: 44px; /* Минимальная высота для touch targets */
     min-width: 44px;
   }
+  
+  a {
+    min-height: 44px;
+    display: inline-block;
+  }
+}
+
+/* Загрузочный экран для мобильных */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  height: calc(var(--vh, 1vh) * 100);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 1rem;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Стили для ошибок сети */
+.network-error {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  color: #dc2626;
+  font-size: 14px;
+  z-index: 9999;
+}
+
+.network-error.online {
+  background: #f0fdf4;
+  border-bottom-color: #bbf7d0;
+  color: #16a34a;
 }

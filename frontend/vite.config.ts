@@ -17,6 +17,27 @@ export default defineConfig({
       ext: '.br',
     })
   ],
+  server: {
+    host: '0.0.0.0', // Разрешаем подключения с любых устройств в сети
+    port: 5173,
+    strictPort: false,
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+    hmr: {
+      // Исправляем проблемы с WebSocket для мобильных устройств
+      port: 5173,
+      host: '0.0.0.0'
+    },
+    // Настройки для стабильной работы WebSocket
+    watch: {
+      usePolling: false, // Отключаем polling для лучшей производительности
+      interval: 1000,
+    }
+  },
   build: {
     target: ['safari11', 'es2017'],
     modulePreload: {
@@ -83,23 +104,8 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
-  server: {
-    port: 5173,
-    host: true,
-    hmr: {
-      // Исправляем проблемы с WebSocket
-      port: 5173,
-    },
-    // Настройки для стабильной работы WebSocket
-    watch: {
-      usePolling: false, // Отключаем polling для лучшей производительности
-      interval: 1000,
-    },
-    // Настройки для предотвращения конфликтов портов
-    strictPort: false,
-  },
   preview: {
     port: 5173,
-    host: true,
+    host: '0.0.0.0', // Для preview тоже разрешаем подключения с любых устройств
   }
 })
