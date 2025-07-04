@@ -10,5 +10,10 @@ export VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR
 echo "📍 VITE_SUPABASE_URL: $VITE_SUPABASE_URL"
 echo "🔑 VITE_SUPABASE_ANON_KEY length: ${#VITE_SUPABASE_ANON_KEY}"
 
+# Устанавливаем зависимости если нужно
+echo "📦 Установка зависимостей..."
+npm ci
+
 # Запускаем сборку
+echo "🏗️ Запуск сборки..."
 npm run build

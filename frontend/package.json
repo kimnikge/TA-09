@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:clean": "npm run kill-ports && npm run dev",
-    "build": "tsc -b && vite build",
+    "build": "npx tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "seed": "tsx scripts/seedSupabase.ts",
