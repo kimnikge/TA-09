@@ -1,13 +1,16 @@
 [build]
   base = "frontend"
-  command = "npm ci && npm run build"
+  command = "npm ci --legacy-peer-deps --no-audit --no-fund && npm run build:prod"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
-  NPM_VERSION = "10"
+  NODE_VERSION = "20.17.0"
+  NPM_VERSION = "10.8.2"
   NODE_ENV = "production"
   CI = "true"
+  DISABLE_ESLINT_PLUGIN = "true"
+  SKIP_PREFLIGHT_CHECK = "true"
+  GENERATE_SOURCEMAP = "false"
   VITE_SUPABASE_URL = "https://olutrxiazrmanrgzzwmb.supabase.co"
   VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhenJtYW5yZ3p6d21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzMwMjEsImV4cCI6MjA2NjQ0OTAyMX0.qxU_1Fjk4Mu9vMSfEI4jSGm3yYhh9WbmlSEFttOMKiM"
 
