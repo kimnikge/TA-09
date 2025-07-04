@@ -16,6 +16,8 @@ dist-ssr
 src/**/*.js
 src/**/*.d.ts
 !src/vite-env.d.ts
+!src/globals.d.ts
+!src/types/*.d.ts
 
 # Editor directories and files
 .vscode/*
