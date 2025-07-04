@@ -1,30 +1,29 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-// import compression from 'vite-plugin-compression' // Отключаем сжатие - Netlify делает это автоматически
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
-    // Убираем сжатие - Netlify автоматически применяет gzip и brotli
-    // compression({
-    //   algorithm: 'gzip',
-    //   ext: '.gz',
-    // }),
-    // compression({
-    //   algorithm: 'brotliCompress',
-    //   ext: '.br',
-    // })
+    react()
   ],
   server: {
-    host: 'localhost', // Используем localhost для стабильности
+    host: 'localhost',
     port: 5173,
     strictPort: false,
     cors: true,
-    // Упрощенная конфигурация HMR
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
     hmr: {
-      port: 5173, // Используем тот же порт для HMR
-      overlay: false // Отключаем overlay для избежания лишних ошибок
+      port: 5173,
+      host: 'localhost'
+    },
+    // Настройки для стабильной работы WebSocket
+    watch: {
+      usePolling: false, // Отключаем polling для лучшей производительности
+      interval: 1000,
     }
   },
   build: {
@@ -95,7 +94,7 @@ export default defineConfig({
   },
   preview: {
     port: 5173,
-    host: '0.0.0.0', // Для preview тоже разрешаем подключения с любых устройств
+    host: 'localhost', // Для preview тоже разрешаем подключения с любых устройств
   },
   // Добавляем совместимость с Netlify
   optimizeDeps: {
