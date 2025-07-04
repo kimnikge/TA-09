@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Building, Users, Plus, Trash2, Edit3, MapPin, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import { useAdminAuth } from '../hooks/useAdminAuth';
@@ -36,11 +36,7 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ onError }) => {
     address: ''
   });
 
-  useEffect(() => {
-    loadClients();
-  }, [adminUser.id]); // Зависимость от ID пользователя
-
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -65,7 +61,11 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ onError }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [onError]);
+
+  useEffect(() => {
+    loadClients();
+  }, [loadClients]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

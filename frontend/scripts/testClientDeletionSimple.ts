@@ -27,6 +27,7 @@ async function testClientDeletion() {
     }
 
     console.log('✅ Подключение к базе данных успешно');
+    console.log('📊 Результат подключения:', connectionTest ? 'Данные получены' : 'Нет данных');
 
     // 2. Получаем текущие клиенты
     console.log('\n2️⃣ Получение списка клиентов...');
@@ -51,11 +52,25 @@ async function testClientDeletion() {
 
     // 3. Создаем тестового клиента
     console.log('\n3️⃣ Создание тестового клиента...');
+    
+    // Сначала найдем реального пользователя
+    const { data: users, error: usersError } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .limit(1);
+
+    if (usersError || !users || users.length === 0) {
+      console.error('❌ Не найден пользователь для создания клиента');
+      return;
+    }
+
     const testClientData = {
       name: `Тестовый клиент для удаления ${Date.now()}`,
       address: 'ул. Тестовая для удаления, д. 123',
-      created_by: 'test-user-id'
+      created_by: users[0].id
     };
+
+    console.log('👤 Создается от имени пользователя:', users[0].name || users[0].email);
 
     const { data: newClient, error: createError } = await supabase
       .from('clients')

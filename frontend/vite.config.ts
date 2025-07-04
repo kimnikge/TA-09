@@ -28,9 +28,10 @@ export default defineConfig({
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
     hmr: {
-      // Исправляем проблемы с WebSocket для мобильных устройств
-      port: 5173,
-      host: '0.0.0.0'
+      // Конфигурация для работы WebSocket в браузере
+      port: 5176, // Используем другой порт для WebSocket
+      host: 'localhost',
+      overlay: true
     },
     // Настройки для стабильной работы WebSocket
     watch: {

@@ -388,70 +388,126 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
       )}
 
       {/* Список клиентов */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {filteredClients.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <Building size={48} className="mx-auto mb-2 opacity-50" />
-            <p>
+          <div className="text-center py-12 text-gray-500">
+            <Building size={64} className="mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium mb-2">
               {showDeleted 
                 ? 'Нет удаленных клиентов' 
                 : 'Нет активных клиентов'}
             </p>
+            <p className="text-sm">
+              {showDeleted 
+                ? 'Все клиенты активны' 
+                : 'Добавьте первого клиента для начала работы'}
+            </p>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-6">
             {filteredClients.map((client) => (
               <div 
                 key={client.id} 
-                className={`border rounded-lg p-4 transition-all ${
+                className={`border-2 rounded-xl p-6 transition-all shadow-sm hover:shadow-md ${
                   client.is_deleted 
-                    ? 'border-red-200 bg-red-50' 
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    ? 'border-red-200 bg-red-50/50' 
+                    : 'border-gray-200 bg-white hover:border-blue-200'
                 }`}
               >
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Building size={20} className={client.is_deleted ? 'text-red-500' : 'text-blue-500'} />
-                      <h3 className={`font-semibold ${client.is_deleted ? 'text-red-800' : 'text-gray-800'}`}>
-                        {client.name}
-                      </h3>
+                    {/* Заголовок клиента */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`p-2 rounded-lg ${
+                        client.is_deleted 
+                          ? 'bg-red-100 text-red-600' 
+                          : 'bg-blue-100 text-blue-600'
+                      }`}>
+                        <Building size={24} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`text-xl font-bold ${
+                          client.is_deleted ? 'text-red-800' : 'text-gray-800'
+                        }`}>
+                          {client.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Торговая точка
+                        </p>
+                      </div>
                       {client.is_deleted && (
-                        <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
+                        <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
                           Удален
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600 mb-2">
-                      <MapPin size={16} />
-                      <span>{client.address}</span>
+
+                    {/* Детали клиента */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-1 rounded bg-gray-100 text-gray-600 mt-1">
+                          <MapPin size={16} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Адрес</p>
+                          <p className="text-gray-600">{client.address}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <div className="p-1 rounded bg-gray-100 text-gray-600 mt-1">
+                          <Building size={16} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Тип</p>
+                          <p className="text-gray-600">Торговая точка</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      Создан: {new Date(client.created_at).toLocaleDateString('ru-RU')}
-                      {client.deleted_at && (
-                        <span className="text-red-500 ml-2">
-                          • Удален: {new Date(client.deleted_at).toLocaleDateString('ru-RU')}
+
+                    {/* Информация о создании */}
+                    <div className="border-t pt-4 text-sm text-gray-500">
+                      <div className="flex items-center gap-4">
+                        <span>
+                          <strong>Создан:</strong> {new Date(client.created_at).toLocaleDateString('ru-RU', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
                         </span>
-                      )}
+                        {client.deleted_at && (
+                          <span className="text-red-500">
+                            <strong>Удален:</strong> {new Date(client.deleted_at).toLocaleDateString('ru-RU', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+
+                  {/* Кнопки действий */}
+                  <div className="flex flex-col gap-2">
                     {client.is_deleted ? (
                       <>
                         <button
                           onClick={() => handleRestore(client.id)}
-                          className="bg-green-100 text-green-600 p-2 rounded-lg hover:bg-green-200 transition-colors"
+                          className="bg-green-100 text-green-700 p-3 rounded-lg hover:bg-green-200 transition-colors flex items-center gap-2"
                           title="Восстановить клиента"
                         >
-                          <RefreshCw size={16} />
+                          <RefreshCw size={18} />
+                          <span className="text-sm font-medium">Восстановить</span>
                         </button>
                         {userRole === 'admin' && (
                           <button
                             onClick={() => handleHardDelete(client.id)}
-                            className="bg-red-100 text-red-600 p-2 rounded-lg hover:bg-red-200 transition-colors"
+                            className="bg-red-100 text-red-700 p-3 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
                             title="Удалить окончательно (только для админов)"
                           >
-                            <AlertCircle size={16} />
+                            <AlertCircle size={18} />
+                            <span className="text-sm font-medium">Удалить навсегда</span>
                           </button>
                         )}
                       </>
@@ -459,17 +515,19 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
                       <>
                         <button
                           onClick={() => handleEdit(client)}
-                          className="bg-blue-100 text-blue-600 p-2 rounded-lg hover:bg-blue-200 transition-colors"
+                          className="bg-blue-100 text-blue-700 p-3 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
                           title="Редактировать клиента"
                         >
-                          <Edit3 size={16} />
+                          <Edit3 size={18} />
+                          <span className="text-sm font-medium">Редактировать</span>
                         </button>
                         <button
                           onClick={() => handleSoftDelete(client.id)}
-                          className="bg-red-100 text-red-600 p-2 rounded-lg hover:bg-red-200 transition-colors"
+                          className="bg-red-100 text-red-700 p-3 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
                           title="Удалить клиента"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={18} />
+                          <span className="text-sm font-medium">Удалить</span>
                         </button>
                       </>
                     )}
