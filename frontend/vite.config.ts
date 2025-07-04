@@ -17,25 +17,14 @@ export default defineConfig({
     // })
   ],
   server: {
-    host: '0.0.0.0', // Разрешаем подключения с любых устройств в сети
+    host: 'localhost', // Используем localhost для стабильности
     port: 5173,
     strictPort: false,
     cors: true,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    // Упрощенная конфигурация HMR
     hmr: {
-      // Конфигурация для работы WebSocket в браузере
-      port: 5176, // Используем другой порт для WebSocket
-      host: 'localhost',
-      overlay: true
-    },
-    // Настройки для стабильной работы WebSocket
-    watch: {
-      usePolling: false, // Отключаем polling для лучшей производительности
-      interval: 1000,
+      port: 5173, // Используем тот же порт для HMR
+      overlay: false // Отключаем overlay для избежания лишних ошибок
     }
   },
   build: {

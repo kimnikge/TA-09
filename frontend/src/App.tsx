@@ -35,6 +35,21 @@ function App() {
 
   // Мобильная инициализация
   useEffect(() => {
+    // Глобальный обработчик ошибок
+    const handleGlobalError = (event: ErrorEvent) => {
+      console.error('Глобальная ошибка:', event.error)
+      // Не показываем критические ошибки пользователю, только логируем
+    }
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Необработанная ошибка Promise:', event.reason)
+      // Предотвращаем показ ошибки в консоли браузера
+      event.preventDefault()
+    }
+
+    window.addEventListener('error', handleGlobalError)
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+
     // Применяем мобильную адаптацию
     adaptForMobile()
     
@@ -53,7 +68,11 @@ function App() {
     // Скрываем через 2 секунды или когда приложение загружено
     const timer = setTimeout(hideLoadingScreen, 2000)
     
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('error', handleGlobalError)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
   }, [])
 
   useEffect(() => {
