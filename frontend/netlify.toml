@@ -13,11 +13,13 @@
   VITE_SUPABASE_URL = "https://olutrxiazrmanrgzzwmb.supabase.co"
   VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
+# SPA redirect
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
+# Безопасность
 [[headers]]
   for = "/*"
   [headers.values]
@@ -27,27 +29,23 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none';"
 
+# Отладка
 [[headers]]
   for = "/index.html"
   [headers.values]
     X-Debug = "Netlify deployment"
     X-Timestamp = "2025-07-04"
 
+# Кеширование ассетов
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-[[headers]]
-  for = "*.js"
-  [headers.values]
-    Content-Encoding = "gzip"
+# ❌ УДАЛЕНО: вручную заданное gzip-сжатие
+# Netlify автоматически определит и отдаст .gz/.br при наличии
 
-[[headers]]
-  for = "*.css"
-  [headers.values]
-    Content-Encoding = "gzip"
-
+# Адаптивность
 [[headers]]
   for = "/"
   [headers.values]
