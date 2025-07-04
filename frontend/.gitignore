@@ -29,3 +29,6 @@ src/**/*.d.ts
 *.njsproj
 *.sln
 *.sw?
+
+# npm config
+.npmrc
