@@ -13,10 +13,8 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true
-  },
-  realtime: {
-    disabled: true // Отключаем realtime для тестов
   }
+  // Убираем realtime конфигурацию - она не нужна для тестов
 })
 
 async function testSupabaseConnection() {

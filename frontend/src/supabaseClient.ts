@@ -9,10 +9,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true
   },
-  realtime: {
-    // Полностью отключаем realtime для избежания WebSocket ошибок
-    disabled: true
-  },
+  // Убираем realtime конфигурацию для избежания WebSocket ошибок
+  // realtime отключается автоматически, если не использовать .on() методы
   global: {
     headers: {
       'apikey': supabaseAnonKey
