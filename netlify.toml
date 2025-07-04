@@ -29,20 +29,16 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Сжатие для лучшей производительности
+# Заголовки для HTML файлов
 [[headers]]
-  for = "*.js"
+  for = "/*.html"
   [headers.values]
-    Content-Encoding = "gzip"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
-[[headers]]
-  for = "*.css"
-  [headers.values]
-    Content-Encoding = "gzip"
-
-# Настройки для мобильных устройств
+# Настройки для мобильных устройств и PWA
 [[headers]]
   for = "/"
   [headers.values]
     X-UA-Compatible = "IE=edge"
-    viewport = "width=device-width, initial-scale=1.0"
+
+# Netlify автоматически применяет сжатие, поэтому убираем ручную настройку Content-Encoding

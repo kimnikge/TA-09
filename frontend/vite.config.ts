@@ -1,21 +1,20 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import compression from 'vite-plugin-compression'
+// import compression from 'vite-plugin-compression' // Отключаем сжатие - Netlify делает это автоматически
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    // Сжимаем файлы для продакшена
-    compression({
-      algorithm: 'gzip',
-      ext: '.gz',
-    }),
-    // Дополнительное сжатие brotli для лучшей производительности
-    compression({
-      algorithm: 'brotliCompress',
-      ext: '.br',
-    })
+    // Убираем сжатие - Netlify автоматически применяет gzip и brotli
+    // compression({
+    //   algorithm: 'gzip',
+    //   ext: '.gz',
+    // }),
+    // compression({
+    //   algorithm: 'brotliCompress',
+    //   ext: '.br',
+    // })
   ],
   server: {
     host: '0.0.0.0', // Разрешаем подключения с любых устройств в сети
