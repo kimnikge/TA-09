@@ -28,9 +28,11 @@ const ProductsSection: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [units, setUnits] = useState<string[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isNewCategory, setIsNewCategory] = useState(false);
+  const [isNewUnit, setIsNewUnit] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     price: '',
@@ -61,6 +63,10 @@ const ProductsSection: React.FC = () => {
       // Извлекаем уникальные категории
       const uniqueCategories = [...new Set((data || []).map(p => p.category))];
       setCategories(uniqueCategories);
+      
+      // Извлекаем уникальные единицы измерения
+      const uniqueUnits = [...new Set((data || []).map(p => p.unit).filter(Boolean))];
+      setUnits(uniqueUnits);
     } catch (error) {
       console.error('Ошибка загрузки товаров:', error);
       setError('Ошибка загрузки товаров');
@@ -90,6 +96,7 @@ const ProductsSection: React.FC = () => {
     setEditingProduct(null);
     setShowAddForm(false);
     setIsNewCategory(false);
+    setIsNewUnit(false);
     setError('');
   };
 
@@ -105,6 +112,8 @@ const ProductsSection: React.FC = () => {
     });
     // Проверяем, есть ли категория товара в списке существующих
     setIsNewCategory(!categories.includes(product.category));
+    // Проверяем, есть ли единица измерения в списке существующих
+    setIsNewUnit(product.unit ? !units.includes(product.unit) : false);
     setShowAddForm(true);
   };
 
@@ -164,6 +173,11 @@ const ProductsSection: React.FC = () => {
       // Если добавлена новая категория, обновляем список категорий
       if (isNewCategory && formData.category && !categories.includes(formData.category)) {
         setCategories(prev => [...prev, formData.category].sort());
+      }
+      
+      // Если добавлена новая единица измерения, обновляем список единиц
+      if (isNewUnit && formData.unit && !units.includes(formData.unit)) {
+        setUnits(prev => [...prev, formData.unit].sort());
       }
       
       // Убираем сообщение об успехе через 3 секунды
@@ -680,13 +694,77 @@ const ProductsSection: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Единица измерения *
                   </label>
-                  <input
-                    type="text"
-                    value={formData.unit}
-                    onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-                    placeholder="шт, кг, л и т.д."
-                  />
+                  {!isNewUnit ? (
+                    <div className="space-y-2">
+                      {/* Выпадающий список существующих единиц */}
+                      <select
+                        value={formData.unit}
+                        onChange={(e) => {
+                          if (e.target.value === '__new__') {
+                            setIsNewUnit(true);
+                            setFormData({...formData, unit: ''});
+                          } else {
+                            setFormData({...formData, unit: e.target.value});
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base bg-white"
+                      >
+                        <option value="">Выберите единицу измерения</option>
+                        {/* Популярные единицы измерения */}
+                        <option value="шт">шт (штуки)</option>
+                        <option value="кг">кг (килограммы)</option>
+                        <option value="г">г (граммы)</option>
+                        <option value="л">л (литры)</option>
+                        <option value="упак">упак (упаковки)</option>
+                        {/* Существующие единицы из базы */}
+                        {units.filter(unit => !['шт', 'кг', 'г', 'л', 'упак'].includes(unit)).map(unit => (
+                          <option key={unit} value={unit}>{unit}</option>
+                        ))}
+                        <option value="__new__">+ Добавить новую единицу</option>
+                      </select>
+                      
+                      {/* Кнопка для добавления новой единицы */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsNewUnit(true);
+                          setFormData({...formData, unit: ''});
+                        }}
+                        className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:text-gray-800 hover:border-gray-400 transition-colors text-sm"
+                      >
+                        + Добавить новую единицу измерения
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {/* Поле ввода новой единицы */}
+                      <input
+                        type="text"
+                        value={formData.unit}
+                        onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                        className="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-base bg-green-50"
+                        placeholder="Введите новую единицу измерения"
+                        autoFocus
+                      />
+                      
+                      {/* Кнопки управления */}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsNewUnit(false);
+                            setFormData({...formData, unit: ''});
+                          }}
+                          className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded hover:bg-gray-50"
+                        >
+                          Отмена
+                        </button>
+                        <span className="text-xs text-green-600 flex items-center">
+                          Новая единица измерения будет добавлена
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
