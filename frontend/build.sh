@@ -14,6 +14,15 @@ echo "🔑 VITE_SUPABASE_ANON_KEY length: ${#VITE_SUPABASE_ANON_KEY}"
 echo "📦 Установка зависимостей..."
 npm ci
 
+# Проверяем наличие TypeScript
+echo "🔍 Проверка TypeScript..."
+if ! npx tsc --version &> /dev/null; then
+    echo "⚠️  TypeScript не найден, устанавливаем..."
+    npm install typescript --no-save
+fi
+
 # Запускаем сборку
 echo "🏗️ Запуск сборки..."
 npm run build
+
+echo "✅ Сборка завершена успешно!"
