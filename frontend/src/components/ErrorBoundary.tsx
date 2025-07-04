@@ -21,7 +21,17 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary поймал ошибку:', error, errorInfo);
+    console.error('❌ ErrorBoundary поймал ошибку:', error, errorInfo);
+    
+    // Отправляем информацию об ошибке в консоль для отладки
+    console.log('🔍 Детали ошибки:', {
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    });
   }
 
   render() {

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .status {
+            font-size: 1.5em;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .success {
+            background: rgba(76, 175, 80, 0.3);
+        }
+        .error {
+            background: rgba(244, 67, 54, 0.3);
+        }
+        a {
+            color: #ffeb3b;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Тест деплоя</h1>
+        
+        <div class="status success">
+            ✅ Статические файлы загружаются
+        </div>
+        
+        <div class="status" id="js-status">
+            ⏳ Проверка JavaScript...
+        </div>
+        
+        <div class="status">
+            📍 URL: <span id="current-url"></span>
+        </div>
+        
+        <div class="status">
+            🕐 Время: <span id="current-time"></span>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <a href="/">← Вернуться к приложению</a> |
+            <a href="/debug.html">Отладка</a>
+        </div>
+    </div>
+    
+    <script>
+        // Проверка JavaScript
+        document.getElementById('js-status').className = 'status success';
+        document.getElementById('js-status').innerHTML = '✅ JavaScript работает';
+        
+        // Отображение текущего URL
+        document.getElementById('current-url').textContent = window.location.href;
+        
+        // Отображение времени
+        document.getElementById('current-time').textContent = new Date().toLocaleString('ru-RU');
+        
+        console.log('🎉 Тест страница загружена успешно!');
+        console.log('URL:', window.location.href);
+        console.log('User Agent:', navigator.userAgent);
+    </script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отладка деплоя</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { border-left: 4px solid #4CAF50; }
+        .error { border-left: 4px solid #f44336; }
+        .warning { border-left: 4px solid #ff9800; }
+        pre { background: #f8f8f8; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Отладка деплоя Netlify</h1>
+    
+    <div class="info success">
+        <h3>✅ Статический контент загружен</h3>
+        <p>Эта страница показывает, что статические файлы работают корректно.</p>
+    </div>
+    
+    <div class="info" id="js-test">
+        <h3>⏳ Проверка JavaScript...</h3>
+        <p>Проверяем работу JavaScript в браузере...</p>
+    </div>
+    
+    <div class="info" id="env-test">
+        <h3>⏳ Проверка переменных окружения...</h3>
+        <p>Проверяем доступность переменных окружения...</p>
+    </div>
+    
+    <div class="info" id="network-test">
+        <h3>⏳ Проверка сети...</h3>
+        <p>Проверяем доступность Supabase...</p>
+    </div>
+    
+    <div class="info">
+        <h3>📋 Техническая информация</h3>
+        <pre id="tech-info">Загрузка...</pre>
+    </div>
+    
+    <div class="info">
+        <h3>🌐 Информация о браузере</h3>
+        <pre id="browser-info">Загрузка...</pre>
+    </div>
+    
+    <script>
+        // Проверка JavaScript
+        document.getElementById('js-test').className = 'info success';
+        document.getElementById('js-test').innerHTML = '<h3>✅ JavaScript работает</h3><p>JavaScript выполняется корректно в браузере.</p>';
+        
+        // Техническая информация
+        document.getElementById('tech-info').textContent = JSON.stringify({
+            url: window.location.href,
+            timestamp: new Date().toISOString(),
+            referrer: document.referrer,
+            protocol: window.location.protocol,
+            host: window.location.host,
+            pathname: window.location.pathname
+        }, null, 2);
+        
+        // Информация о браузере
+        document.getElementById('browser-info').textContent = JSON.stringify({
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            cookieEnabled: navigator.cookieEnabled,
+            onLine: navigator.onLine,
+            platform: navigator.platform
+        }, null, 2);
+        
+        // Проверка переменных окружения
+        const envTest = document.getElementById('env-test');
+        try {
+            // Проверяем встроенные переменные
+            const supabaseUrl = 'https://olutrxiazrmanrgzzwmb.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhenJtYW5yZ3p6d21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzMwMjEsImV4cCI6MjA2NjQ0OTAyMX0.qxU_1Fjk4Mu9vMSfEI4jSGm3yYhh9WbmlSEFttOMKiM';
+            
+            if (supabaseUrl && supabaseKey && supabaseKey.length > 100) {
+                envTest.className = 'info success';
+                envTest.innerHTML = `
+                    <h3>✅ Переменные окружения доступны</h3>
+                    <p>URL: ${supabaseUrl}</p>
+                    <p>Key length: ${supabaseKey.length}</p>
+                    <p>Key preview: ${supabaseKey.substring(0, 20)}...</p>
+                `;
+            } else {
+                envTest.className = 'info error';
+                envTest.innerHTML = '<h3>❌ Переменные окружения недоступны</h3><p>Проблема с переменными окружения.</p>';
+            }
+        } catch (error) {
+            envTest.className = 'info error';
+            envTest.innerHTML = '<h3>❌ Ошибка проверки переменных</h3><p>' + error.message + '</p>';
+        }
+        
+        // Проверка сети
+        const networkTest = document.getElementById('network-test');
+        fetch('https://olutrxiazrmanrgzzwmb.supabase.co/rest/v1/', {
+            method: 'GET',
+            headers: {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhenJtYW5yZ3p6d21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzMwMjEsImV4cCI6MjA2NjQ0OTAyMX0.qxU_1Fjk4Mu9vMSfEI4jSGm3yYhh9WbmlSEFttOMKiM'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                networkTest.className = 'info success';
+                networkTest.innerHTML = '<h3>✅ Подключение к Supabase работает</h3><p>Успешное подключение к базе данных.</p>';
+            } else {
+                networkTest.className = 'info warning';
+                networkTest.innerHTML = '<h3>⚠️ Проблема с подключением к Supabase</h3><p>Статус: ' + response.status + '</p>';
+            }
+        })
+        .catch(error => {
+            networkTest.className = 'info error';
+            networkTest.innerHTML = '<h3>❌ Ошибка подключения к Supabase</h3><p>' + error.message + '</p>';
+        });
+    </script>
+</body>
+</html>

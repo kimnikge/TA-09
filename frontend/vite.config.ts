@@ -91,13 +91,23 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+    // Явно определяем переменные окружения
+    __VITE_SUPABASE_URL__: JSON.stringify(process.env.VITE_SUPABASE_URL || 'https://olutrxiazrmanrgzzwmb.supabase.co'),
+    __VITE_SUPABASE_ANON_KEY__: JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhenJtYW5yZ3p6d21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzMwMjEsImV4cCI6MjA2NjQ0OTAyMX0.qxU_1Fjk4Mu9vMSfEI4jSGm3yYhh9WbmlSEFttOMKiM'),
   },
   preview: {
     port: 5173,
-    host: 'localhost', // Для preview тоже разрешаем подключения с любых устройств
+    host: 'localhost',
   },
   // Добавляем совместимость с Netlify
   optimizeDeps: {
-    include: ['react', 'react-dom', '@supabase/supabase-js']
+    include: ['react', 'react-dom', '@supabase/supabase-js'],
+    exclude: ['@supabase/supabase-js']
+  },
+  // Исправляем проблемы с ESM модулями
+  esbuild: {
+    target: 'es2020',
+    format: 'esm'
   }
 })

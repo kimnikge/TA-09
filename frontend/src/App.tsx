@@ -35,21 +35,8 @@ function App() {
 
   // Мобильная инициализация
   useEffect(() => {
-    // Глобальный обработчик ошибок
-    const handleGlobalError = (event: ErrorEvent) => {
-      console.error('Глобальная ошибка:', event.error)
-      // Не показываем критические ошибки пользователю, только логируем
-    }
-
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Необработанная ошибка Promise:', event.reason)
-      // Предотвращаем показ ошибки в консоли браузера
-      event.preventDefault()
-    }
-
-    window.addEventListener('error', handleGlobalError)
-    window.addEventListener('unhandledrejection', handleUnhandledRejection)
-
+    console.log('🚀 App компонент монтируется...')
+    
     // Применяем мобильную адаптацию
     adaptForMobile()
     
@@ -62,24 +49,25 @@ function App() {
       const loadingScreen = document.getElementById('loading-screen')
       if (loadingScreen) {
         loadingScreen.style.display = 'none'
+        console.log('✅ Загрузочный экран скрыт')
       }
     }
     
     // Скрываем через 2 секунды или когда приложение загружено
     const timer = setTimeout(hideLoadingScreen, 2000)
     
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener('error', handleGlobalError)
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
-    }
+    return () => clearTimeout(timer)
   }, [])
 
   useEffect(() => {
+    console.log('🔐 Инициализация аутентификации...')
+    
     // Получить текущего пользователя и его роль
     const getUserAndRole = async (currentUser: User | null) => {
       if (currentUser) {
         try {
+          console.log('👤 Получение роли пользователя:', currentUser.email)
+          
           // Проверить роль пользователя в таблице profiles
           const { data: profile, error } = await supabase
             .from('profiles')
@@ -88,18 +76,20 @@ function App() {
             .single()
           
           if (error) {
-            console.warn('Ошибка получения профиля пользователя:', error)
+            console.warn('⚠️ Ошибка получения профиля пользователя:', error)
             setUserRole('sales_rep') // Роль по умолчанию
             return
           }
           
           if (profile?.role === 'admin') {
             setUserRole('admin')
+            console.log('👑 Пользователь - администратор')
           } else {
             setUserRole('sales_rep')
+            console.log('👨‍💼 Пользователь - торговый представитель')
           }
         } catch (error) {
-          console.warn('Ошибка при получении роли пользователя:', error)
+          console.warn('❌ Ошибка при получении роли пользователя:', error)
           setUserRole('sales_rep')
         }
       } else {
@@ -110,10 +100,11 @@ function App() {
     // Получить текущего пользователя
     const getUser = async () => {
       try {
+        console.log('🔍 Получение текущего пользователя...')
         const { data: { user }, error } = await supabase.auth.getUser()
         
         if (error) {
-          console.warn('Ошибка аутентификации:', error)
+          console.warn('⚠️ Ошибка аутентификации:', error)
           // Очищаем некорректную сессию
           await supabase.auth.signOut()
           setUser(null)
