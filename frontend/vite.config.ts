@@ -107,5 +107,9 @@ export default defineConfig({
   preview: {
     port: 5173,
     host: '0.0.0.0', // Для preview тоже разрешаем подключения с любых устройств
+  },
+  // Добавляем совместимость с Netlify
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@supabase/supabase-js']
   }
 })
