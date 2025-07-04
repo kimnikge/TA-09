@@ -148,4 +148,5 @@ const AdminAccess: React.FC = () => {
   );
 };
 
+export { AdminAccess };
 export default AdminAccess;

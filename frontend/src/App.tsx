@@ -6,7 +6,7 @@ import { adaptForMobile, getDeviceInfo } from './utils/mobileHelpers'
 import './App.css'
 
 // Lazy loading компонентов для уменьшения первоначального бандла
-const AdminAccess = lazy(() => import('./admin/AdminAccess'))
+const AdminAccess = lazy(() => import('./admin/AdminAccess').then(module => ({ default: module.AdminAccess })))
 const OrderPage = lazy(() => import('./pages/OrderPage'))
 const ClientsPage = lazy(() => import('./pages/ClientsPage'))
 
