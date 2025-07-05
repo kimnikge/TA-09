@@ -1,11 +1,11 @@
 [build]
-  command = "NODE_ENV=development npm ci --legacy-peer-deps --no-audit --no-fund && npm run build:prod"
+  command = "npm ci --legacy-peer-deps --no-audit --no-fund && npm run build:prod"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.17.0"
   NPM_VERSION = "10.8.2"
-  # NODE_ENV = "production"
+  NODE_ENV = "production"
   CI = "true"
   DISABLE_ESLINT_PLUGIN = "true"
   SKIP_PREFLIGHT_CHECK = "true"
@@ -18,36 +18,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Безопасность
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none';"
-
-# Отладка
-[[headers]]
-  for = "/index.html"
-  [headers.values]
-    X-Debug = "Netlify deployment"
-    X-Timestamp = "2025-07-04"
-
-# Кеширование ассетов
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# ❌ УДАЛЕНО: вручную заданное gzip-сжатие
-# Netlify автоматически определит и отдаст .gz/.br при наличии
-
-# Адаптивность
-[[headers]]
-  for = "/"
-  [headers.values]
-    X-UA-Compatible = "IE=edge"
-    viewport = "width=device-width, initial-scale=1.0"

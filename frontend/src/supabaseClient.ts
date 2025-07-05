@@ -60,17 +60,24 @@ console.log('📍 Supabase URL:', supabaseUrl)
 console.log('🔑 Anon Key (первые 20 символов):', supabaseAnonKey?.substring(0, 20) + '...')
 console.log('🔑 Anon Key length:', supabaseAnonKey?.length || 0)
 console.log('🌍 Environment:', import.meta.env.MODE)
-console.log('🔗 All env vars:', Object.keys(import.meta.env))
 
-// Тестируем подключение
-supabase.from('profiles').select('count', { count: 'exact', head: true })
-  .then(({ count, error }) => {
+// Ленивая проверка подключения (не блокирует первую отрисовку)
+let connectionTested = false
+export const testConnection = async () => {
+  if (connectionTested) return
+  connectionTested = true
+  
+  try {
+    const { count, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true })
     if (error) {
       console.error('❌ Ошибка подключения к Supabase:', error)
     } else {
       console.log('✅ Supabase подключен успешно. Профилей в базе:', count)
     }
-  })
+  } catch (err) {
+    console.error('❌ Ошибка тестирования подключения:', err)
+  }
+}
 
 console.log('✅ Supabase клиент создан успешно')
 

@@ -1,7 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Filter, Calendar, Download } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
-import Papa from 'papaparse';
+
+// Простая утилита для создания CSV без внешних зависимостей
+const createCSV = (data: Record<string, unknown>[], delimiter = ';') => {
+  if (data.length === 0) return '';
+  
+  const keys = Object.keys(data[0]);
+  const csvHeaders = keys.join(delimiter);
+  const csvRows = data.map(row => 
+    keys.map(key => {
+      const value = row[key];
+      if (value === null || value === undefined) return '';
+      // Экранируем запятые и кавычки
+      if (typeof value === 'string' && (value.includes(delimiter) || value.includes('"'))) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    }).join(delimiter)
+  );
+  
+  return [csvHeaders, ...csvRows].join('\n');
+};
 
 interface Order {
   id: string;
@@ -252,10 +272,7 @@ const OrdersSection: React.FC = () => {
       }
 
       // Конвертируем в CSV
-      const csv = Papa.unparse(exportData, {
-        delimiter: ';', // Используем точку с запятой для лучшей совместимости с Excel
-        header: true
-      });
+      const csv = createCSV(exportData);
 
       // Создаем и скачиваем файл
       const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -298,10 +315,7 @@ const OrdersSection: React.FC = () => {
       }
     ];
 
-    const csv = Papa.unparse(summaryData, {
-      delimiter: ';',
-      header: true
-    });
+    const csv = createCSV(summaryData);
 
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');

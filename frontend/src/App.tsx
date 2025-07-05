@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense, memo } from 'react'
-import { supabase } from './supabaseClient'
+import { supabase, testConnection } from './supabaseClient'
 import type { User } from '@supabase/supabase-js'
 import { BarChart3, Package, Users, LogOut, Menu, X } from 'lucide-react'
 import { adaptForMobile, getDeviceInfo } from './utils/mobileHelpers'
@@ -10,20 +10,46 @@ const AdminAccess = lazy(() => import('./admin/AdminAccess').then(module => ({ d
 const OrderPage = lazy(() => import('./pages/OrderPage'))
 const ClientsPage = lazy(() => import('./pages/ClientsPage'))
 
-// Мемоизированный компонент загрузки
-const LoadingSpinner = memo(() => (
+// Улучшенный компонент загрузки
+const LoadingSpinner = memo(({ message = 'Загрузка...' }: { message?: string }) => (
   <div className="flex items-center justify-center h-64">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-    <span className="ml-2 text-gray-600">Загрузка...</span>
+    <span className="ml-2 text-gray-600">{message}</span>
   </div>
 ))
 
+// Компонент скелетона для быстрой первой отрисовки
+const AppSkeleton = memo(() => {
+  console.log('💀 AppSkeleton rendering...')
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow animate-pulse">
+        <div className="h-16 bg-gray-200"></div>
+      </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded mb-4"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    </div>
+  )
+})
+
 function App() {
+  console.log('🔥 App component rendering...')
   const [currentPage, setCurrentPage] = useState<'order' | 'clients' | 'admin'>('order')
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<'admin' | 'sales_rep'>('sales_rep')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
+  console.log('🔍 App state:', { 
+    currentPage, 
+    user: user?.email, 
+    loading, 
+    userRole 
+  })
   
   // Состояния для формы авторизации
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
@@ -44,6 +70,9 @@ function App() {
     const deviceInfo = getDeviceInfo()
     console.log('📱 Информация об устройстве:', deviceInfo)
     
+    // Тестируем подключение к Supabase (не блокирует UI)
+    testConnection()
+    
     // Скрываем загрузочный экран
     const hideLoadingScreen = () => {
       const loadingScreen = document.getElementById('loading-screen')
@@ -61,6 +90,12 @@ function App() {
 
   useEffect(() => {
     console.log('🔐 Инициализация аутентификации...')
+    
+    // Таймер безопасности - принудительно убираем loading через 6 секунд
+    const safetyTimer = setTimeout(() => {
+      console.log('⏰ Таймер безопасности: принудительно убираем loading')
+      setLoading(false)
+    }, 6000)
     
     // Получить текущего пользователя и его роль
     const getUserAndRole = async (currentUser: User | null) => {
@@ -104,28 +139,28 @@ function App() {
         const { data: { user }, error } = await supabase.auth.getUser()
         
         if (error) {
-          console.warn('⚠️ Ошибка аутентификации:', error)
-          // Очищаем некорректную сессию
-          await supabase.auth.signOut()
+          console.warn('⚠️ Ошибка аутентификации:', error.message)
           setUser(null)
           setUserRole('sales_rep')
         } else {
+          console.log('✅ Пользователь получен:', user?.email || 'Нет пользователя')
           setUser(user)
           await getUserAndRole(user)
         }
       } catch (error) {
-        console.warn('Ошибка при получении пользователя:', error)
+        console.warn('❌ Ошибка при получении пользователя:', error)
         setUser(null)
         setUserRole('sales_rep')
       } finally {
+        console.log('🔄 Завершение загрузки, setLoading(false)')
+        clearTimeout(safetyTimer) // Очищаем таймер безопасности
         setLoading(false)
       }
     }
 
-    getUser()
-
     // Слушать изменения авторизации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state change:', event, session?.user?.email)
       const currentUser = session?.user ?? null
       
       // Обрабатываем событие выхода из системы
@@ -148,7 +183,14 @@ function App() {
       await getUserAndRole(currentUser)
     })
 
-    return () => subscription.unsubscribe()
+    // Инициализируем пользователя
+    getUser()
+
+    // Очищаем таймер и подписку при размонтировании
+    return () => {
+      clearTimeout(safetyTimer)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const currentUser = {
@@ -258,17 +300,12 @@ function App() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Загрузка...</p>
-        </div>
-      </div>
-    )
+    console.log('📦 Showing AppSkeleton due to loading state - loading:', loading)
+    return <AppSkeleton />
   }
 
   if (!user) {
+    console.log('👤 Showing auth form - no user logged in, user:', user)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
@@ -376,6 +413,7 @@ function App() {
     )
   }
 
+  console.log('🎯 Rendering main app interface for user:', user.email)
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Навигация */}

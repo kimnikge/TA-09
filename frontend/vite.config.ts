@@ -57,18 +57,22 @@ export default defineConfig({
             return 'icons';
           }
           
-          // CSS библиотеки
-          if (id.includes('tailwindcss') || id.includes('autoprefixer')) {
-            return 'css-libs';
-          }
-          
           // Админ компоненты в отдельный чанк (загружается только когда нужно)
           if (id.includes('/admin/') || id.includes('AdminAccess')) {
             return 'admin';
           }
           
+          // Страницы в отдельные чанки
+          if (id.includes('pages/OrderPage') || id.includes('OrderPage')) {
+            return 'order-page';
+          }
+          
+          if (id.includes('pages/ClientsPage') || id.includes('ClientsPage')) {
+            return 'clients-page';
+          }
+          
           // Утилиты
-          if (id.includes('papaparse') || id.includes('dotenv')) {
+          if (id.includes('papaparse') || id.includes('dotenv') || id.includes('utils/')) {
             return 'utils';
           }
           

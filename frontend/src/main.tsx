@@ -3,6 +3,9 @@ import './index.css'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 
+// Первая проверка - JavaScript загружается
+console.log('🔥 MAIN.TSX: JavaScript загружен!')
+
 // Отладочная информация
 console.log('🚀 Приложение запускается...')
 console.log('📍 Текущий URL:', window.location.href)
@@ -13,6 +16,7 @@ console.log('📦 Vite ENV:', import.meta.env)
 const container = document.getElementById('root')
 if (!container) {
   console.error('❌ Root element not found')
+  document.body.innerHTML = '<div style="padding: 20px; color: red;">ERROR: Root element not found</div>'
   throw new Error('Root element not found')
 }
 
