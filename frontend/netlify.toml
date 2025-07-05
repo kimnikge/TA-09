@@ -1,5 +1,5 @@
 [build]
-  command = "npm ci --no-audit --no-fund && npm run build:prod"
+  command = "rm -rf node_modules package-lock.json && npm install && npm run build:prod"
   publish = "dist"
 
 [build.environment]
@@ -10,6 +10,7 @@
   DISABLE_ESLINT_PLUGIN = "true"
   SKIP_PREFLIGHT_CHECK = "true"
   GENERATE_SOURCEMAP = "false"
+  NPM_CONFIG_OPTIONAL = "true"
   VITE_SUPABASE_URL = "https://olutrxiazrmanrgzzwmb.supabase.co"
   VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhenJtYW5yZ3p6d21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzMwMjEsImV4cCI6MjA2NjQ0OTAyMX0.qxU_1Fjk4Mu9vMSfEI4jSGm3yYhh9WbmlSEFttOMKiM"
 
