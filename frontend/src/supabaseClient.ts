@@ -4,37 +4,32 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://olutrxiazrmanrgzzwmb.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhenJtYW5yZ3p6d21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzMwMjEsImV4cCI6MjA2NjQ0OTAyMX0.qxU_1Fjk4Mu9vMSfEI4jSGm3yYhh9WbmlSEFttOMKiM'
 
-// Функция проверки конфигурации
-function validateConfig() {
-  console.log('🔍 Проверка конфигурации Supabase...')
+// Асинхронная функция проверки конфигурации (НЕ блокирует загрузку)
+async function validateConfigAsync() {
+  console.log('🔍 Асинхронная проверка конфигурации Supabase...')
   console.log('URL:', supabaseUrl)
   console.log('Key length:', supabaseAnonKey?.length)
   
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Отсутствуют переменные окружения Supabase')
-    console.error('URL:', supabaseUrl)
-    console.error('Key:', supabaseAnonKey ? 'есть' : 'отсутствует')
-    throw new Error('Supabase configuration missing')
+    return false
   }
 
   if (!supabaseUrl.startsWith('https://')) {
     console.error('❌ Некорректный URL Supabase')
-    throw new Error('Invalid Supabase URL')
+    return false
   }
 
   if (supabaseAnonKey.length < 100) {
     console.error('❌ Некорректный ключ Supabase (слишком короткий)')
-    console.error('Длина ключа:', supabaseAnonKey.length)
-    throw new Error('Invalid Supabase anon key')
+    return false
   }
   
   console.log('✅ Конфигурация Supabase корректна')
+  return true
 }
 
-// Проверяем конфигурацию
-validateConfig()
-
-// Создаем и экспортируем клиента на верхнем уровне
+// Создаем клиента БЕЗ блокирующей проверки
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -61,21 +56,35 @@ console.log('🔑 Anon Key (первые 20 символов):', supabaseAnonKey
 console.log('🔑 Anon Key length:', supabaseAnonKey?.length || 0)
 console.log('🌍 Environment:', import.meta.env.MODE)
 
-// Ленивая проверка подключения (не блокирует первую отрисовку)
-let connectionTested = false
-export const testConnection = async () => {
-  if (connectionTested) return
-  connectionTested = true
-  
+// Асинхронная функция тестирования соединения (НЕ блокирует загрузку)
+export const testConnection = async (): Promise<boolean> => {
   try {
-    const { count, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true })
-    if (error) {
-      console.error('❌ Ошибка подключения к Supabase:', error)
-    } else {
-      console.log('✅ Supabase подключен успешно. Профилей в базе:', count)
+    console.log('🔗 Асинхронное тестирование соединения с Supabase...')
+    
+    // Сначала проверяем конфигурацию
+    const configValid = await validateConfigAsync()
+    if (!configValid) {
+      console.error('❌ Некорректная конфигурация Supabase')
+      return false
     }
-  } catch (err) {
-    console.error('❌ Ошибка тестирования подключения:', err)
+    
+    // Тестируем соединение
+    const { error } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1)
+      .maybeSingle()
+    
+    if (error && error.code !== 'PGRST116') {
+      console.warn('⚠️ Ошибка соединения с Supabase:', error.message)
+      return false
+    }
+    
+    console.log('✅ Соединение с Supabase успешно')
+    return true
+  } catch (error) {
+    console.error('❌ Критическая ошибка соединения:', error)
+    return false
   }
 }
 

@@ -18,9 +18,46 @@ const LoadingSpinner = memo(({ message = 'Загрузка...' }: { message?: st
   </div>
 ))
 
+// Компонент мгновенного скелетона для быстрой первой отрисовки
+const InstantSkeleton = memo(() => {
+  console.log('⚡ InstantSkeleton rendering - мгновенная отрисовка')
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Мгновенная навигационная панель */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-blue-200 rounded animate-pulse"></div>
+              <div className="ml-3 h-6 w-48 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="flex space-x-4">
+              <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 w-24 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Мгновенный контент */}
+      <div className="max-w-7xl mx-auto py-6 px-4">
+        <div className="animate-pulse">
+          <div className="h-8 w-64 bg-gray-200 rounded mb-6"></div>
+          <div className="space-y-4">
+            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-32 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+})
+
 // Компонент скелетона для быстрой первой отрисовки
 const AppSkeleton = memo(() => {
-  console.log('💀 AppSkeleton rendering...')
+  console.log('� AppSkeleton rendering - fallback скелетон')
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow animate-pulse">
@@ -91,11 +128,11 @@ function App() {
   useEffect(() => {
     console.log('🔐 Инициализация аутентификации...')
     
-    // Таймер безопасности - принудительно убираем loading через 6 секунд
+    // Таймер безопасности - принудительно убираем loading через 1 секунду для быстрой загрузки
     const safetyTimer = setTimeout(() => {
-      console.log('⏰ Таймер безопасности: принудительно убираем loading')
+      console.log('⏰ Таймер безопасности: принудительно убираем loading (быстрая загрузка)')
       setLoading(false)
-    }, 6000)
+    }, 1000)
     
     // Получить текущего пользователя и его роль
     const getUserAndRole = async (currentUser: User | null) => {
@@ -132,30 +169,35 @@ function App() {
       }
     }
 
-    // Получить текущего пользователя
-    const getUser = async () => {
-      try {
-        console.log('🔍 Получение текущего пользователя...')
-        const { data: { user }, error } = await supabase.auth.getUser()
-        
-        if (error) {
-          console.warn('⚠️ Ошибка аутентификации:', error.message)
+    // Получить текущего пользователя БЕЗ блокирующего await
+    const getUser = () => {
+      console.log('🔍 Получение текущего пользователя...')
+      
+      // Немедленно убираем loading для быстрого рендеринга
+      setLoading(false)
+      clearTimeout(safetyTimer)
+      
+      // Асинхронно получаем пользователя в фоне
+      supabase.auth.getUser()
+        .then(({ data: { user }, error }) => {
+          if (error) {
+            console.warn('⚠️ Ошибка аутентификации:', error.message)
+            setUser(null)
+            setUserRole('sales_rep')
+          } else {
+            console.log('✅ Пользователь получен:', user?.email || 'Нет пользователя')
+            setUser(user)
+            // Асинхронно получаем роль
+            if (user) {
+              getUserAndRole(user)
+            }
+          }
+        })
+        .catch(error => {
+          console.warn('❌ Ошибка при получении пользователя:', error)
           setUser(null)
           setUserRole('sales_rep')
-        } else {
-          console.log('✅ Пользователь получен:', user?.email || 'Нет пользователя')
-          setUser(user)
-          await getUserAndRole(user)
-        }
-      } catch (error) {
-        console.warn('❌ Ошибка при получении пользователя:', error)
-        setUser(null)
-        setUserRole('sales_rep')
-      } finally {
-        console.log('🔄 Завершение загрузки, setLoading(false)')
-        clearTimeout(safetyTimer) // Очищаем таймер безопасности
-        setLoading(false)
-      }
+        })
     }
 
     // Слушать изменения авторизации
@@ -299,9 +341,10 @@ function App() {
     }
   }
 
+  // Показываем InstantSkeleton только в самом начале для мгновенной отрисовки
   if (loading) {
-    console.log('📦 Showing AppSkeleton due to loading state - loading:', loading)
-    return <AppSkeleton />
+    console.log('⚡ Showing InstantSkeleton for instant rendering - loading:', loading)
+    return <InstantSkeleton />
   }
 
   if (!user) {
