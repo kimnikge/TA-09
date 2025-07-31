@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense, memo } from 'react'
 import { supabase, testConnection } from './supabaseClient'
 import type { User } from '@supabase/supabase-js'
 import { BarChart3, Package, Users, LogOut, Menu, X } from 'lucide-react'
-import { adaptForMobile, getDeviceInfo, isAndroid } from './utils/mobileHelpers'
+import { adaptForMobile, isAndroid } from './utils/mobileHelpers'
 import './App.css'
 
 // Lazy loading компонентов для уменьшения первоначального бандла
@@ -70,6 +70,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<'admin' | 'sales_rep'>('sales_rep')
+  const [userApproved, setUserApproved] = useState<boolean>(true) // Статус одобрения пользователя
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   
   // console.log убран для совместимости с Android
@@ -87,12 +88,6 @@ function App() {
     // Применяем мобильную адаптацию
     adaptForMobile()
     
-    // Логируем информацию об устройстве (только в development)
-    if (process.env.NODE_ENV === 'development') {
-      const deviceInfo = getDeviceInfo()
-      console.log('📱 Информация об устройстве:', deviceInfo)
-    }
-    
     // Тестируем подключения к Supabase (только НЕ для Android - может зависать)
     if (!isAndroid()) {
       testConnection()
@@ -103,9 +98,6 @@ function App() {
       const loadingScreen = document.getElementById('loading-screen')
       if (loadingScreen) {
         loadingScreen.style.display = 'none'
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Загрузочный экран скрыт')
-        }
       }
     }
     
@@ -123,29 +115,24 @@ function App() {
       supabase.auth.getUser().then(({ data: { user } }) => {
         setUser(user)
         if (user) {
-          // Получаем роль в фоне без блокировки
-          supabase.from('profiles').select('role').eq('id', user.id).single()
+          // Получаем роль И статус одобрения в фоне без блокировки
+          supabase.from('profiles').select('role, approved').eq('id', user.id).single()
             .then(({ data }) => {
               setUserRole(data?.role || 'sales_rep')
+              setUserApproved(data?.approved ?? true) // По умолчанию одобрен для старых записей
             })
         }
       }).catch(() => {
         setUser(null)
         setUserRole('sales_rep')
+        setUserApproved(true)
       })
       return
     }
 
     // Для остальных устройств - обычная логика
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔐 Инициализация аутентификации...')
-    }
-    
     // Таймер безопасности - для Android ЭКСТРЕМАЛЬНО быстрый
     const safetyTimer = setTimeout(() => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('⏰ Таймер безопасности: принудительно убираем loading (быстрая загрузка)')
-      }
       setLoading(false)
     }, isAndroid() ? 50 : 500) // Android: 50мс (!), остальные: 500мс
     
@@ -153,40 +140,30 @@ function App() {
     const getUserAndRole = async (currentUser: User | null) => {
       if (currentUser) {
         try {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('👤 Получение роли пользователя:', currentUser.email)
-          }
-          
-          // Проверить роль пользователя в таблице profiles
+          // Проверить роль пользователя И статус одобрения в таблице profiles
           const { data: profile, error } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, approved')
             .eq('id', currentUser.id)
             .single()
           
           if (error) {
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('⚠️ Ошибка получения профиля пользователя:', error)
-            }
             setUserRole('sales_rep') // Роль по умолчанию
+            setUserApproved(true) // По умолчанию одобрен для совместимости
             return
           }
           
+          // Устанавливаем роль
           if (profile?.role === 'admin') {
             setUserRole('admin')
-            if (process.env.NODE_ENV === 'development') {
-              console.log('👑 Пользователь - администратор')
-            }
           } else {
             setUserRole('sales_rep')
-            if (process.env.NODE_ENV === 'development') {
-              console.log('👨‍💼 Пользователь - торговый представитель')
-            }
           }
-        } catch (error) {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('❌ Ошибка при получении роли пользователя:', error)
-          }
+          
+          // Устанавливаем статус одобрения
+          const approved = profile?.approved ?? true // По умолчанию одобрен для старых записей
+          setUserApproved(approved)
+        } catch {
           setUserRole('sales_rep')
         }
       } else {
@@ -196,10 +173,6 @@ function App() {
 
     // Получить текущего пользователя БЕЗ блокирующего await
     const getUser = () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Получение текущего пользователя...')
-      }
-      
       // ДЛЯ ANDROID: Немедленно убираем loading для мгновенного показа UI
       if (isAndroid()) {
         setLoading(false)
@@ -216,15 +189,9 @@ function App() {
           }
           
           if (error) {
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('⚠️ Ошибка аутентификации:', error.message)
-            }
             setUser(null)
             setUserRole('sales_rep')
           } else {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('✅ Пользователь получен:', user?.email || 'Нет пользователя')
-            }
             setUser(user)
             // Асинхронно получаем роль (НЕ блокирует UI)
             if (user) {
@@ -232,14 +199,10 @@ function App() {
             }
           }
         })
-        .catch(error => {
+        .catch(() => {
           // Убираем loading даже при ошибке
           setLoading(false)
           clearTimeout(safetyTimer)
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('❌ Ошибка при получении пользователя:', error)
-          }
           setUser(null)
           setUserRole('sales_rep')
         })
@@ -247,26 +210,22 @@ function App() {
 
     // Слушать изменения авторизации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 Auth state change:', event, session?.user?.email)
-      }
       const currentUser = session?.user ?? null
       
       // Обрабатываем событие выхода из системы
       if (event === 'SIGNED_OUT') {
         setUser(null)
         setUserRole('sales_rep')
+        setUserApproved(true) // Сброс статуса одобрения
         return
       }
       
       // Обрабатываем ошибки токена
       if (event === 'TOKEN_REFRESHED' && !session) {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('Ошибка обновления токена, выходим из системы')
-        }
         await supabase.auth.signOut()
         setUser(null)
         setUserRole('sales_rep')
+        setUserApproved(true) // Сброс статуса одобрения
         return
       }
       
@@ -276,6 +235,7 @@ function App() {
         getUserAndRole(currentUser).catch(() => {
           // Если ошибка получения роли - ставим по умолчанию
           setUserRole('sales_rep')
+          setUserApproved(true) // По умолчанию одобрен для совместимости
         })
       }
     })
@@ -297,8 +257,22 @@ function App() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    setCurrentPage('order')
+    try {
+      await supabase.auth.signOut()
+      // Принудительно сбрасываем все состояния
+      setUser(null)
+      setUserRole('sales_rep')
+      setUserApproved(true)
+      setCurrentPage('order')
+      setMobileMenuOpen(false)
+    } catch {
+      // В случае ошибки всё равно сбрасываем состояния
+      setUser(null)
+      setUserRole('sales_rep')
+      setUserApproved(true)
+      setCurrentPage('order')
+      setMobileMenuOpen(false)
+    }
   }
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -336,10 +310,6 @@ function App() {
         
         // Если пользователь успешно создан, пытаемся создать профиль
         if (data.user) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Пользователь создан, создаем профиль...', data.user.id)
-          }
-          
           // Небольшая задержка для синхронизации с auth.users
           await new Promise(resolve => setTimeout(resolve, 1000))
           
@@ -350,12 +320,9 @@ function App() {
           
           while (!profileCreated && attempts < maxAttempts) {
             attempts++
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`Попытка создания профиля ${attempts}/${maxAttempts}`)
-            }
             
             try {
-              const { data: newProfile, error: profileError } = await supabase
+              const { error: profileError } = await supabase
                 .from('profiles')
                 .insert({
                   id: data.user.id,
@@ -368,10 +335,6 @@ function App() {
                 .single()
               
               if (profileError) {
-                if (process.env.NODE_ENV === 'development') {
-                  console.error(`Ошибка создания профиля (попытка ${attempts}):`, profileError)
-                }
-                
                 if (attempts === maxAttempts) {
                   // Последняя попытка неудачна
                   setAuthError(`Пользователь зарегистрирован, но не удалось создать профиль. Код ошибки: ${profileError.code}. Попробуйте войти в систему позже или обратитесь к администратору.`)
@@ -381,17 +344,11 @@ function App() {
                   await new Promise(resolve => setTimeout(resolve, 2000))
                 }
               } else {
-                if (process.env.NODE_ENV === 'development') {
-                  console.log('Профиль создан успешно:', newProfile)
-                }
                 profileCreated = true
                 // Показываем сообщение об успешной регистрации
                 setAuthError('')
               }
-            } catch (err) {
-              if (process.env.NODE_ENV === 'development') {
-                console.error(`Неожиданная ошибка при создании профиля (попытка ${attempts}):`, err)
-              }
+            } catch {
               if (attempts === maxAttempts) {
                 setAuthError('Произошла неожиданная ошибка при создании профиля. Обратитесь к администратору.')
               }
@@ -409,6 +366,35 @@ function App() {
   // Показываем InstantSkeleton только в самом начале для мгновенной отрисовки
   if (loading) {
     return <InstantSkeleton />
+  }
+
+  // Экран блокировки пользователя
+  if (user && !userApproved) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <div className="mb-4">
+            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-8V7a2 2 0 00-4 0v2m0 0a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2V7a2 2 0 00-4 0z"></path>
+              </svg>
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Аккаунт заблокирован
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Ваш аккаунт ожидает одобрения администратора. Пожалуйста, свяжитесь с руководством для активации доступа.
+          </p>
+          <button
+            onClick={handleLogout}
+            className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
+            Выйти из аккаунта
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (!user) {

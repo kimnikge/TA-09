@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import type { UserProfile } from '../hooks/useUsers';
 
@@ -17,6 +17,8 @@ const UsersTable: React.FC<UsersTableProps> = ({
   onToggleStatus,
   onDeleteUser,
 }) => {
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -48,8 +50,18 @@ const UsersTable: React.FC<UsersTableProps> = ({
     await onUpdateRole(userId, newRole);
   };
 
-  const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
-    await onToggleStatus(userId, currentStatus);
+    const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
+    try {
+      setUpdatingUserId(userId);
+      const success = await onToggleStatus(userId, currentStatus);
+      if (!success) {
+        // Ошибка уже обработана в onToggleStatus
+      }
+    } catch {
+      // Ошибка уже обработана
+    } finally {
+      setUpdatingUserId(null);
+    }
   };
 
   const handleDelete = async (userId: string) => {
@@ -87,7 +99,13 @@ const UsersTable: React.FC<UsersTableProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => (
+            {users.map((user) => {
+              // Логируем данные каждого пользователя для отладки
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`👤 Отображение пользователя ${user.email}: approved=${user.approved}`);
+              }
+              
+              return (
               <tr key={user.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -115,14 +133,22 @@ const UsersTable: React.FC<UsersTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
-                    onClick={() => handleStatusToggle(user.id, user.approved || false)}
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      user.approved
+                    onClick={() => handleStatusToggle(user.id, user.approved ?? false)}
+                    disabled={updatingUserId === user.id}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
+                      updatingUserId === user.id 
+                        ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+                        : user.approved
                         ? 'bg-green-100 text-green-800 hover:bg-green-200'
                         : 'bg-red-100 text-red-800 hover:bg-red-200'
                     }`}
                   >
-                    {user.approved ? (
+                    {updatingUserId === user.id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-gray-600 mr-1"></div>
+                        Обновление...
+                      </>
+                    ) : user.approved ? (
                       <>
                         <CheckCircle className="w-3 h-3 mr-1" />
                         Активен
@@ -156,7 +182,8 @@ const UsersTable: React.FC<UsersTableProps> = ({
                   </div>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>

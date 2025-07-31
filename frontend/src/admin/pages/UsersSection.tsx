@@ -205,6 +205,7 @@ const UsersSection: React.FC = () => {
 
       {/* Таблица пользователей */}
       <UsersTable
+        key={`users-table-${users.length}-${users.map(u => `${u.id}-${u.approved}`).join('-')}`}
         users={filteredUsers}
         loading={loading}
         onUpdateRole={updateUserRole}

@@ -32,6 +32,13 @@ export const useUsers = () => {
       }
       
       console.log('✅ useUsers: Пользователи загружены:', data?.length || 0);
+      console.log('📋 useUsers: Данные пользователей:', data?.map(u => ({ 
+        id: u.id, 
+        email: u.email, 
+        approved: u.approved,
+        role: u.role 
+      })));
+      
       setUsers(data || []);
       setError(null);
     } catch (err) {
@@ -70,22 +77,27 @@ export const useUsers = () => {
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
       const newStatus = !currentStatus;
+      
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ approved: newStatus })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select('id, email, approved');
       
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
       
-      // Обновляем локальное состояние
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, approved: newStatus } : user
-      ));
+      // НЕМЕДЛЕННО И ФОРСИРОВАННО обновляем локальное состояние
+      setUsers(prevUsers => {
+        const updatedUsers = prevUsers.map(user => 
+          user.id === userId ? { ...user, approved: newStatus } : user
+        );
+        return updatedUsers;
+      });
       
-      console.log('✅ Статус пользователя обновлен');
       return true;
     } catch (err) {
-      console.error('❌ Ошибка обновления статуса:', err);
       setError(err instanceof Error ? err.message : 'Ошибка при обновлении статуса');
       return false;
     }
