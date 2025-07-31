@@ -60,10 +60,12 @@ const ProductsSection: React.FC = () => {
 
       setProducts(data || []);
       
-      // Отладочная информация о статусе товаров
-      console.log('Загруженные товары с их статусом active:', 
-        (data || []).map(p => ({ name: p.name, active: p.active, type: typeof p.active }))
-      );
+      // Отладочная информация о статусе товаров (только в development)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Загруженные товары с их статусом active:', 
+          (data || []).map(p => ({ name: p.name, active: p.active, type: typeof p.active }))
+        );
+      }
       
       // Извлекаем уникальные категории
       const uniqueCategories = [...new Set((data || []).map(p => p.category))];

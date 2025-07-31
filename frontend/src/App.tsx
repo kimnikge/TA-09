@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense, memo } from 'react'
 import { supabase, testConnection } from './supabaseClient'
 import type { User } from '@supabase/supabase-js'
 import { BarChart3, Package, Users, LogOut, Menu, X } from 'lucide-react'
-import { adaptForMobile, getDeviceInfo } from './utils/mobileHelpers'
+import { adaptForMobile, getDeviceInfo, isAndroid } from './utils/mobileHelpers'
 import './App.css'
 
 // Lazy loading компонентов для уменьшения первоначального бандла
@@ -75,8 +75,6 @@ function App() {
 
   // Мобильная инициализация
   useEffect(() => {
-    // console.log убран для совместимости с Android
-    
     // Применяем мобильную адаптацию
     adaptForMobile()
     
@@ -100,8 +98,8 @@ function App() {
       }
     }
     
-    // Для Android уменьшаем время ожидания
-    const timer = setTimeout(hideLoadingScreen, 1500)
+    // Для Android значительно уменьшаем время ожидания
+    const timer = setTimeout(hideLoadingScreen, isAndroid() ? 300 : 1500)
     
     return () => clearTimeout(timer)
   }, [])
@@ -111,13 +109,13 @@ function App() {
       console.log('🔐 Инициализация аутентификации...')
     }
     
-    // Таймер безопасности - для Android уменьшаем до 500мс для быстрой загрузки
+    // Таймер безопасности - для Android значительно уменьшаем для быстрой загрузки
     const safetyTimer = setTimeout(() => {
       if (process.env.NODE_ENV === 'development') {
         console.log('⏰ Таймер безопасности: принудительно убираем loading (быстрая загрузка)')
       }
       setLoading(false)
-    }, 500) // Уменьшено с 1000 до 500мс для Android
+    }, isAndroid() ? 200 : 500) // Android: 200мс, остальные: 500мс
     
     // Получить текущего пользователя и его роль
     const getUserAndRole = async (currentUser: User | null) => {
@@ -360,16 +358,10 @@ function App() {
 
   // Показываем InstantSkeleton только в самом начале для мгновенной отрисовки
   if (loading) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('⚡ Showing InstantSkeleton for instant rendering - loading:', loading)
-    }
     return <InstantSkeleton />
   }
 
   if (!user) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('👤 Showing auth form - no user logged in, user:', user)
-    }
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
@@ -477,9 +469,6 @@ function App() {
     )
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🎯 Rendering main app interface for user:', user.email)
-  }
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Навигация */}

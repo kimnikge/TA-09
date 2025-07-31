@@ -6,26 +6,36 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIU
 
 // Асинхронная функция проверки конфигурации (НЕ блокирует загрузку)
 async function validateConfigAsync() {
-  console.log('🔍 Асинхронная проверка конфигурации Supabase...')
-  console.log('URL:', supabaseUrl)
-  console.log('Key length:', supabaseAnonKey?.length)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Асинхронная проверка конфигурации Supabase...')
+    console.log('URL:', supabaseUrl)
+    console.log('Key length:', supabaseAnonKey?.length)
+  }
   
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('❌ Отсутствуют переменные окружения Supabase')
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Отсутствуют переменные окружения Supabase')
+    }
     return false
   }
 
   if (!supabaseUrl.startsWith('https://')) {
-    console.error('❌ Некорректный URL Supabase')
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Некорректный URL Supabase')
+    }
     return false
   }
 
   if (supabaseAnonKey.length < 100) {
-    console.error('❌ Некорректный ключ Supabase (слишком короткий)')
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Некорректный ключ Supabase (слишком короткий)')
+    }
     return false
   }
   
-  console.log('✅ Конфигурация Supabase корректна')
+  if (process.env.NODE_ENV === 'development') {
+    console.log('✅ Конфигурация Supabase корректна')
+  }
   return true
 }
 
@@ -49,22 +59,28 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// Отладочная информация
-console.log('🔧 Настройка Supabase клиента...')
-console.log('📍 Supabase URL:', supabaseUrl)
-console.log('🔑 Anon Key (первые 20 символов):', supabaseAnonKey?.substring(0, 20) + '...')
-console.log('🔑 Anon Key length:', supabaseAnonKey?.length || 0)
-console.log('🌍 Environment:', import.meta.env.MODE)
+// Отладочная информация (только в development)
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔧 Настройка Supabase клиента...')
+  console.log('📍 Supabase URL:', supabaseUrl)
+  console.log('🔑 Anon Key (первые 20 символов):', supabaseAnonKey?.substring(0, 20) + '...')
+  console.log('🔑 Anon Key length:', supabaseAnonKey?.length || 0)
+  console.log('🌍 Environment:', import.meta.env.MODE)
+}
 
 // Асинхронная функция тестирования соединения (НЕ блокирует загрузку)
 export const testConnection = async (): Promise<boolean> => {
   try {
-    console.log('🔗 Асинхронное тестирование соединения с Supabase...')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔗 Асинхронное тестирование соединения с Supabase...')
+    }
     
     // Сначала проверяем конфигурацию
     const configValid = await validateConfigAsync()
     if (!configValid) {
-      console.error('❌ Некорректная конфигурация Supabase')
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Некорректная конфигурация Supabase')
+      }
       return false
     }
     
@@ -76,19 +92,27 @@ export const testConnection = async (): Promise<boolean> => {
       .maybeSingle()
     
     if (error && error.code !== 'PGRST116') {
-      console.warn('⚠️ Ошибка соединения с Supabase:', error.message)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Ошибка соединения с Supabase:', error.message)
+      }
       return false
     }
     
-    console.log('✅ Соединение с Supabase успешно')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Соединение с Supabase успешно')
+    }
     return true
   } catch (error) {
-    console.error('❌ Критическая ошибка соединения:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Критическая ошибка соединения:', error)
+    }
     return false
   }
 }
 
-console.log('✅ Supabase клиент создан успешно')
+if (process.env.NODE_ENV === 'development') {
+  console.log('✅ Supabase клиент создан успешно')
+}
 
 // Типы для базы данных
 export interface Profile {

@@ -44,16 +44,21 @@ export const adaptForMobile = () => {
   
   // Специальные оптимизации для Android
   if (isAndroid()) {
-    // Отключаем консольные логи в production на Android
+    // Полностью отключаем консольные логи в production на Android
     if (process.env.NODE_ENV === 'production') {
       console.log = () => {}
       console.warn = () => {}
       console.error = () => {}
+      console.debug = () => {}
+      console.info = () => {}
     }
     
     // Принудительно устанавливаем высоту для Android
     document.documentElement.style.height = '100%'
     document.body.style.height = '100%'
+    
+    // Оптимизируем рендеринг для Android
+    document.documentElement.style.webkitTextSizeAdjust = '100%'
   }
   
   // Предотвращаем зум при двойном тапе
@@ -83,7 +88,9 @@ export const adaptForMobile = () => {
   window.addEventListener('resize', setVH)
   window.addEventListener('orientationchange', setVH)
   
-  console.log('📱 Мобильная адаптация применена')
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📱 Мобильная адаптация применена')
+  }
 }
 
 // Детекция сетевого соединения
