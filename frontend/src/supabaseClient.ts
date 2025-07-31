@@ -1,5 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Детекция Android для оптимизаций
+const isAndroidDevice = (): boolean => {
+  if (typeof window === 'undefined') return false
+  const userAgent = navigator.userAgent || ''
+  return /android/i.test(userAgent)
+}
+
 // Получаем переменные окружения с fallback значениями
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://olutrxiazrmanrgzzwmb.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhenJtYW5yZ3p6d21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzMwMjEsImV4cCI6MjA2NjQ0OTAyMX0.qxU_1Fjk4Mu9vMSfEI4jSGm3yYhh9WbmlSEFttOMKiM'
@@ -43,13 +50,20 @@ async function validateConfigAsync() {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
+    autoRefreshToken: !isAndroidDevice(), // Отключаем автообновление для Android
+    detectSessionInUrl: !isAndroidDevice() // Отключаем для Android
   },
   realtime: {
-    // Отключаем realtime для избежания WebSocket ошибок
-    heartbeatIntervalMs: 30000,
-    reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 30000),
+    // Для Android полностью отключаем realtime, для остальных - минимальные настройки
+    ...(isAndroidDevice() ? {
+      // Android: полное отключение realtime
+      heartbeatIntervalMs: 999999999, // Практически отключено
+      reconnectAfterMs: () => 999999999, // Не переподключаемся
+    } : {
+      // Другие устройства: быстрые настройки
+      heartbeatIntervalMs: 15000,
+      reconnectAfterMs: (tries: number) => Math.min(tries * 500, 5000),
+    })
   },
   global: {
     headers: {

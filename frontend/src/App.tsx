@@ -20,7 +20,16 @@ const LoadingSpinner = memo(({ message = 'Загрузка...' }: { message?: st
 
 // Компонент мгновенного скелетона для быстрой первой отрисовки
 const InstantSkeleton = memo(() => {
-  // console.log убран для совместимости с Android
+  // Для Android показываем упрощенный скелетон
+  if (isAndroid()) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+  
+  // Для остальных устройств - полный скелетон
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Мгновенная навигационная панель */}
@@ -84,8 +93,10 @@ function App() {
       console.log('📱 Информация об устройстве:', deviceInfo)
     }
     
-    // Тестируем подключение к Supabase (не блокирует UI)
-    testConnection()
+    // Тестируем подключения к Supabase (только НЕ для Android - может зависать)
+    if (!isAndroid()) {
+      testConnection()
+    }
     
     // Скрываем загрузочный экран
     const hideLoadingScreen = () => {
@@ -99,23 +110,44 @@ function App() {
     }
     
     // Для Android значительно уменьшаем время ожидания
-    const timer = setTimeout(hideLoadingScreen, isAndroid() ? 300 : 1500)
+    const timer = setTimeout(hideLoadingScreen, isAndroid() ? 100 : 1500)
     
     return () => clearTimeout(timer)
   }, [])
 
   useEffect(() => {
+    // ЭКСТРЕМАЛЬНАЯ ОПТИМИЗАЦИЯ ДЛЯ ANDROID: немедленный показ UI
+    if (isAndroid()) {
+      setLoading(false)
+      // Сразу пытаемся получить пользователя без задержек
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        setUser(user)
+        if (user) {
+          // Получаем роль в фоне без блокировки
+          supabase.from('profiles').select('role').eq('id', user.id).single()
+            .then(({ data }) => {
+              setUserRole(data?.role || 'sales_rep')
+            })
+        }
+      }).catch(() => {
+        setUser(null)
+        setUserRole('sales_rep')
+      })
+      return
+    }
+
+    // Для остальных устройств - обычная логика
     if (process.env.NODE_ENV === 'development') {
       console.log('🔐 Инициализация аутентификации...')
     }
     
-    // Таймер безопасности - для Android значительно уменьшаем для быстрой загрузки
+    // Таймер безопасности - для Android ЭКСТРЕМАЛЬНО быстрый
     const safetyTimer = setTimeout(() => {
       if (process.env.NODE_ENV === 'development') {
         console.log('⏰ Таймер безопасности: принудительно убираем loading (быстрая загрузка)')
       }
       setLoading(false)
-    }, isAndroid() ? 200 : 500) // Android: 200мс, остальные: 500мс
+    }, isAndroid() ? 50 : 500) // Android: 50мс (!), остальные: 500мс
     
     // Получить текущего пользователя и его роль
     const getUserAndRole = async (currentUser: User | null) => {
@@ -168,13 +200,21 @@ function App() {
         console.log('🔍 Получение текущего пользователя...')
       }
       
-      // Немедленно убираем loading для быстрого рендеринга
-      setLoading(false)
-      clearTimeout(safetyTimer)
+      // ДЛЯ ANDROID: Немедленно убираем loading для мгновенного показа UI
+      if (isAndroid()) {
+        setLoading(false)
+        clearTimeout(safetyTimer)
+      }
       
-      // Асинхронно получаем пользователя в фоне
+      // Асинхронно получаем пользователя в фоне (НЕ блокирует UI)
       supabase.auth.getUser()
         .then(({ data: { user }, error }) => {
+          // Для не-Android устройств убираем loading после получения пользователя
+          if (!isAndroid()) {
+            setLoading(false)
+            clearTimeout(safetyTimer)
+          }
+          
           if (error) {
             if (process.env.NODE_ENV === 'development') {
               console.warn('⚠️ Ошибка аутентификации:', error.message)
@@ -186,13 +226,17 @@ function App() {
               console.log('✅ Пользователь получен:', user?.email || 'Нет пользователя')
             }
             setUser(user)
-            // Асинхронно получаем роль
+            // Асинхронно получаем роль (НЕ блокирует UI)
             if (user) {
-              getUserAndRole(user)
+              getUserAndRole(user).catch(() => setUserRole('sales_rep'))
             }
           }
         })
         .catch(error => {
+          // Убираем loading даже при ошибке
+          setLoading(false)
+          clearTimeout(safetyTimer)
+          
           if (process.env.NODE_ENV === 'development') {
             console.warn('❌ Ошибка при получении пользователя:', error)
           }
@@ -227,7 +271,13 @@ function App() {
       }
       
       setUser(currentUser)
-      await getUserAndRole(currentUser)
+      // НЕ блокируем поток - запускаем в фоне
+      if (currentUser) {
+        getUserAndRole(currentUser).catch(() => {
+          // Если ошибка получения роли - ставим по умолчанию
+          setUserRole('sales_rep')
+        })
+      }
     })
 
     // Инициализируем пользователя

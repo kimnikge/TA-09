@@ -59,6 +59,10 @@ export const adaptForMobile = () => {
     
     // Оптимизируем рендеринг для Android
     document.documentElement.style.webkitTextSizeAdjust = '100%'
+    
+    // Отключаем анимации для Android (ускоряет рендеринг)
+    document.documentElement.style.setProperty('--animation-duration', '0s')
+    document.documentElement.style.setProperty('--transition-duration', '0s')
   }
   
   // Предотвращаем зум при двойном тапе
