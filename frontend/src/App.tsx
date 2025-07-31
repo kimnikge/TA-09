@@ -20,7 +20,7 @@ const LoadingSpinner = memo(({ message = 'Загрузка...' }: { message?: st
 
 // Компонент мгновенного скелетона для быстрой первой отрисовки
 const InstantSkeleton = memo(() => {
-  console.log('⚡ InstantSkeleton rendering - мгновенная отрисовка')
+  // console.log убран для совместимости с Android
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Мгновенная навигационная панель */}
@@ -56,19 +56,14 @@ const InstantSkeleton = memo(() => {
 })
 
 function App() {
-  console.log('🔥 App component rendering...')
+  // console.log убран для совместимости с Android
   const [currentPage, setCurrentPage] = useState<'order' | 'clients' | 'admin'>('order')
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<'admin' | 'sales_rep'>('sales_rep')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   
-  console.log('🔍 App state:', { 
-    currentPage, 
-    user: user?.email, 
-    loading, 
-    userRole 
-  })
+  // console.log убран для совместимости с Android
   
   // Состояния для формы авторизации
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
@@ -80,14 +75,16 @@ function App() {
 
   // Мобильная инициализация
   useEffect(() => {
-    console.log('🚀 App компонент монтируется...')
+    // console.log убран для совместимости с Android
     
     // Применяем мобильную адаптацию
     adaptForMobile()
     
-    // Логируем информацию об устройстве
-    const deviceInfo = getDeviceInfo()
-    console.log('📱 Информация об устройстве:', deviceInfo)
+    // Логируем информацию об устройстве (только в development)
+    if (process.env.NODE_ENV === 'development') {
+      const deviceInfo = getDeviceInfo()
+      console.log('📱 Информация об устройстве:', deviceInfo)
+    }
     
     // Тестируем подключение к Supabase (не блокирует UI)
     testConnection()
@@ -97,30 +94,38 @@ function App() {
       const loadingScreen = document.getElementById('loading-screen')
       if (loadingScreen) {
         loadingScreen.style.display = 'none'
-        console.log('✅ Загрузочный экран скрыт')
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Загрузочный экран скрыт')
+        }
       }
     }
     
-    // Скрываем через 2 секунды или когда приложение загружено
-    const timer = setTimeout(hideLoadingScreen, 2000)
+    // Для Android уменьшаем время ожидания
+    const timer = setTimeout(hideLoadingScreen, 1500)
     
     return () => clearTimeout(timer)
   }, [])
 
   useEffect(() => {
-    console.log('🔐 Инициализация аутентификации...')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 Инициализация аутентификации...')
+    }
     
-    // Таймер безопасности - принудительно убираем loading через 1 секунду для быстрой загрузки
+    // Таймер безопасности - для Android уменьшаем до 500мс для быстрой загрузки
     const safetyTimer = setTimeout(() => {
-      console.log('⏰ Таймер безопасности: принудительно убираем loading (быстрая загрузка)')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⏰ Таймер безопасности: принудительно убираем loading (быстрая загрузка)')
+      }
       setLoading(false)
-    }, 1000)
+    }, 500) // Уменьшено с 1000 до 500мс для Android
     
     // Получить текущего пользователя и его роль
     const getUserAndRole = async (currentUser: User | null) => {
       if (currentUser) {
         try {
-          console.log('👤 Получение роли пользователя:', currentUser.email)
+          if (process.env.NODE_ENV === 'development') {
+            console.log('👤 Получение роли пользователя:', currentUser.email)
+          }
           
           // Проверить роль пользователя в таблице profiles
           const { data: profile, error } = await supabase
@@ -130,20 +135,28 @@ function App() {
             .single()
           
           if (error) {
-            console.warn('⚠️ Ошибка получения профиля пользователя:', error)
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('⚠️ Ошибка получения профиля пользователя:', error)
+            }
             setUserRole('sales_rep') // Роль по умолчанию
             return
           }
           
           if (profile?.role === 'admin') {
             setUserRole('admin')
-            console.log('👑 Пользователь - администратор')
+            if (process.env.NODE_ENV === 'development') {
+              console.log('👑 Пользователь - администратор')
+            }
           } else {
             setUserRole('sales_rep')
-            console.log('👨‍💼 Пользователь - торговый представитель')
+            if (process.env.NODE_ENV === 'development') {
+              console.log('👨‍💼 Пользователь - торговый представитель')
+            }
           }
         } catch (error) {
-          console.warn('❌ Ошибка при получении роли пользователя:', error)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('❌ Ошибка при получении роли пользователя:', error)
+          }
           setUserRole('sales_rep')
         }
       } else {
@@ -153,7 +166,9 @@ function App() {
 
     // Получить текущего пользователя БЕЗ блокирующего await
     const getUser = () => {
-      console.log('🔍 Получение текущего пользователя...')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Получение текущего пользователя...')
+      }
       
       // Немедленно убираем loading для быстрого рендеринга
       setLoading(false)
@@ -163,11 +178,15 @@ function App() {
       supabase.auth.getUser()
         .then(({ data: { user }, error }) => {
           if (error) {
-            console.warn('⚠️ Ошибка аутентификации:', error.message)
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('⚠️ Ошибка аутентификации:', error.message)
+            }
             setUser(null)
             setUserRole('sales_rep')
           } else {
-            console.log('✅ Пользователь получен:', user?.email || 'Нет пользователя')
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ Пользователь получен:', user?.email || 'Нет пользователя')
+            }
             setUser(user)
             // Асинхронно получаем роль
             if (user) {
@@ -176,7 +195,9 @@ function App() {
           }
         })
         .catch(error => {
-          console.warn('❌ Ошибка при получении пользователя:', error)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('❌ Ошибка при получении пользователя:', error)
+          }
           setUser(null)
           setUserRole('sales_rep')
         })
@@ -184,7 +205,9 @@ function App() {
 
     // Слушать изменения авторизации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Auth state change:', event, session?.user?.email)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Auth state change:', event, session?.user?.email)
+      }
       const currentUser = session?.user ?? null
       
       // Обрабатываем событие выхода из системы
@@ -196,7 +219,9 @@ function App() {
       
       // Обрабатываем ошибки токена
       if (event === 'TOKEN_REFRESHED' && !session) {
-        console.warn('Ошибка обновления токена, выходим из системы')
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Ошибка обновления токена, выходим из системы')
+        }
         await supabase.auth.signOut()
         setUser(null)
         setUserRole('sales_rep')
@@ -263,7 +288,9 @@ function App() {
         
         // Если пользователь успешно создан, пытаемся создать профиль
         if (data.user) {
-          console.log('Пользователь создан, создаем профиль...', data.user.id)
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Пользователь создан, создаем профиль...', data.user.id)
+          }
           
           // Небольшая задержка для синхронизации с auth.users
           await new Promise(resolve => setTimeout(resolve, 1000))
@@ -275,7 +302,9 @@ function App() {
           
           while (!profileCreated && attempts < maxAttempts) {
             attempts++
-            console.log(`Попытка создания профиля ${attempts}/${maxAttempts}`)
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Попытка создания профиля ${attempts}/${maxAttempts}`)
+            }
             
             try {
               const { data: newProfile, error: profileError } = await supabase
@@ -291,7 +320,9 @@ function App() {
                 .single()
               
               if (profileError) {
-                console.error(`Ошибка создания профиля (попытка ${attempts}):`, profileError)
+                if (process.env.NODE_ENV === 'development') {
+                  console.error(`Ошибка создания профиля (попытка ${attempts}):`, profileError)
+                }
                 
                 if (attempts === maxAttempts) {
                   // Последняя попытка неудачна
@@ -302,13 +333,17 @@ function App() {
                   await new Promise(resolve => setTimeout(resolve, 2000))
                 }
               } else {
-                console.log('Профиль создан успешно:', newProfile)
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('Профиль создан успешно:', newProfile)
+                }
                 profileCreated = true
                 // Показываем сообщение об успешной регистрации
                 setAuthError('')
               }
             } catch (err) {
-              console.error(`Неожиданная ошибка при создании профиля (попытка ${attempts}):`, err)
+              if (process.env.NODE_ENV === 'development') {
+                console.error(`Неожиданная ошибка при создании профиля (попытка ${attempts}):`, err)
+              }
               if (attempts === maxAttempts) {
                 setAuthError('Произошла неожиданная ошибка при создании профиля. Обратитесь к администратору.')
               }
@@ -325,12 +360,16 @@ function App() {
 
   // Показываем InstantSkeleton только в самом начале для мгновенной отрисовки
   if (loading) {
-    console.log('⚡ Showing InstantSkeleton for instant rendering - loading:', loading)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('⚡ Showing InstantSkeleton for instant rendering - loading:', loading)
+    }
     return <InstantSkeleton />
   }
 
   if (!user) {
-    console.log('👤 Showing auth form - no user logged in, user:', user)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('👤 Showing auth form - no user logged in, user:', user)
+    }
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
@@ -438,7 +477,9 @@ function App() {
     )
   }
 
-  console.log('🎯 Rendering main app interface for user:', user.email)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🎯 Rendering main app interface for user:', user.email)
+  }
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Навигация */}

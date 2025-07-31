@@ -35,12 +35,26 @@ export const isAndroid = (): boolean => {
   if (typeof window === 'undefined') return false
   
   const userAgent = navigator.userAgent || ''
-  return /Android/.test(userAgent)
+  return /android/i.test(userAgent)
 }
 
 // Адаптация для мобильных устройств
 export const adaptForMobile = () => {
   if (typeof window === 'undefined') return
+  
+  // Специальные оптимизации для Android
+  if (isAndroid()) {
+    // Отключаем консольные логи в production на Android
+    if (process.env.NODE_ENV === 'production') {
+      console.log = () => {}
+      console.warn = () => {}
+      console.error = () => {}
+    }
+    
+    // Принудительно устанавливаем высоту для Android
+    document.documentElement.style.height = '100%'
+    document.body.style.height = '100%'
+  }
   
   // Предотвращаем зум при двойном тапе
   let lastTouchEnd = 0
