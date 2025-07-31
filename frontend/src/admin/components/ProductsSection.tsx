@@ -60,6 +60,11 @@ const ProductsSection: React.FC = () => {
 
       setProducts(data || []);
       
+      // Отладочная информация о статусе товаров
+      console.log('Загруженные товары с их статусом active:', 
+        (data || []).map(p => ({ name: p.name, active: p.active, type: typeof p.active }))
+      );
+      
       // Извлекаем уникальные категории
       const uniqueCategories = [...new Set((data || []).map(p => p.category))];
       setCategories(uniqueCategories);
@@ -80,7 +85,9 @@ const ProductsSection: React.FC = () => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || product.category === selectedCategory;
-    const matchesActiveFilter = showInactive || product.active !== false;
+    // Товар активен, если active === true или active === null/undefined (по умолчанию активен)
+    const isActive = product.active !== false;
+    const matchesActiveFilter = showInactive || isActive;
     return matchesSearch && matchesCategory && matchesActiveFilter;
   });
 
@@ -640,6 +647,7 @@ const ProductsSection: React.FC = () => {
 
                   {/* Действия */}
                   <div className="flex items-center justify-end space-x-1 sm:space-x-3 pt-3 border-t border-gray-100">
+                    {/* Определяем, активен ли товар (по умолчанию активен, если не false) */}
                     {product.active !== false ? (
                       <>
                         {/* Кнопки для активных товаров */}
