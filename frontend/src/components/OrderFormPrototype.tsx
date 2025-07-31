@@ -97,10 +97,11 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
           setClients(clientsData || []);
         }
 
-        // Загружаем товары
+        // Загружаем только активные товары
         const { data: productsData, error: productsError } = await supabase
           .from('products')
           .select('*')
+          .neq('active', false) // Исключаем деактивированные товары
           .order('category', { ascending: true })
           .order('name', { ascending: true });
 

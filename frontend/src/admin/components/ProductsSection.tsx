@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Search, Edit, Trash2, Save, X, RotateCcw } from 'lucide-react';
+import { Package, Plus, Search, Edit, Trash2, Save, X, RotateCcw, EyeOff } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import ImageUpload from '../../components/ImageUpload';
 
@@ -190,7 +190,7 @@ const ProductsSection: React.FC = () => {
 
   // Удаление товара (сначала пробуем мягкое удаление)
   const deleteProduct = async (id: string, name: string) => {
-    if (!confirm(`Вы уверены, что хотите удалить товар "${name}"?`)) {
+    if (!confirm(`Вы уверены, что хотите удалить товар "${name}"?\n\nЕсли товар используется в заказах, он будет деактивирован.\nЕсли не используется - будет удален полностью.`)) {
       return;
     }
 
@@ -303,6 +303,50 @@ const ProductsSection: React.FC = () => {
       if (error instanceof Error) {
         if (error.message.includes('permission denied')) {
           errorMessage = 'Недостаточно прав для восстановления товара';
+        } else if (error.message.includes('Row Level Security')) {
+          errorMessage = 'Ошибка доступа к базе данных';
+        } else {
+          errorMessage = `Ошибка: ${error.message}`;
+        }
+      }
+      
+      setError(errorMessage);
+      setTimeout(() => setError(''), 5000);
+    }
+  };
+
+  // Деактивация товара (мягкое удаление)
+  const deactivateProduct = async (id: string, name: string) => {
+    if (!confirm(`Вы уверены, что хотите деактивировать товар "${name}"?\n\nТовар останется в системе, но будет скрыт от продажи.`)) {
+      return;
+    }
+
+    try {
+      console.log('🔒 Начинаем деактивацию товара:', { id, name });
+      
+      const { error } = await supabase
+        .from('products')
+        .update({ active: false })
+        .eq('id', id);
+
+      if (error) {
+        console.error('❌ Ошибка при деактивации товара:', error);
+        throw error;
+      }
+
+      console.log('✅ Товар успешно деактивирован:', { id, name });
+      setSuccess('Товар успешно деактивирован');
+      loadProducts();
+      
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('❌ Ошибка деактивации товара:', error);
+      
+      let errorMessage = 'Ошибка деактивации товара';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('permission denied')) {
+          errorMessage = 'Недостаточно прав для деактивации товара';
         } else if (error.message.includes('Row Level Security')) {
           errorMessage = 'Ошибка доступа к базе данных';
         } else {
@@ -595,23 +639,33 @@ const ProductsSection: React.FC = () => {
                   </div>
 
                   {/* Действия */}
-                  <div className="flex items-center justify-end space-x-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-end space-x-1 sm:space-x-3 pt-3 border-t border-gray-100">
                     {product.active !== false ? (
                       <>
                         {/* Кнопки для активных товаров */}
                         <button
                           onClick={() => startEdit(product)}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors"
+                          className="inline-flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors"
+                          title="Изменить товар"
                         >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Изменить
+                          <Edit className="w-4 h-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Изменить</span>
+                        </button>
+                        <button
+                          onClick={() => deactivateProduct(product.id, product.name)}
+                          className="inline-flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-orange-600 hover:text-orange-900 hover:bg-orange-50 rounded-md transition-colors"
+                          title="Деактивировать товар"
+                        >
+                          <EyeOff className="w-4 h-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Деактивировать</span>
                         </button>
                         <button
                           onClick={() => deleteProduct(product.id, product.name)}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-colors"
+                          className="inline-flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-colors"
+                          title="Удалить товар"
                         >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Удалить
+                          <Trash2 className="w-4 h-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Удалить</span>
                         </button>
                       </>
                     ) : (
@@ -619,17 +673,19 @@ const ProductsSection: React.FC = () => {
                         {/* Кнопки для деактивированных товаров */}
                         <button
                           onClick={() => restoreProduct(product.id, product.name)}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md transition-colors"
+                          className="inline-flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md transition-colors"
+                          title="Восстановить товар"
                         >
-                          <RotateCcw className="w-4 h-4 mr-1" />
-                          Восстановить
+                          <RotateCcw className="w-4 h-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Восстановить</span>
                         </button>
                         <button
                           onClick={() => startEdit(product)}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors"
+                          className="inline-flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors"
+                          title="Изменить товар"
                         >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Изменить
+                          <Edit className="w-4 h-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Изменить</span>
                         </button>
                       </>
                     )}
