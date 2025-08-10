@@ -211,6 +211,7 @@ const UsersSection: React.FC = () => {
         onUpdateRole={updateUserRole}
         onToggleStatus={toggleUserStatus}
         onDeleteUser={deleteUser}
+        onRefresh={fetchUsers}
       />
 
       {/* Показываем количество отфильтрованных пользователей */}

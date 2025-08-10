@@ -3,6 +3,11 @@ import './index.css'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 
+// Инициализируем систему логирования в dev режиме
+if (import.meta.env.DEV) {
+  import('./utils/loggerTest');
+}
+
 // Добавляем проверку на существование root элемента
 const container = document.getElementById('root')
 if (!container) {

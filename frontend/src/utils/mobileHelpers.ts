@@ -44,14 +44,8 @@ export const adaptForMobile = () => {
   
   // Специальные оптимизации для Android
   if (isAndroid()) {
-    // Полностью отключаем консольные логи в production на Android
-    if (process.env.NODE_ENV === 'production') {
-      console.log = () => {}
-      console.warn = () => {}
-      console.error = () => {}
-      console.debug = () => {}
-      console.info = () => {}
-    }
+    // НЕ отключаем логи полностью - только ограничиваем их количество
+    // Логи остаются важными для отладки, особенно ошибки
     
     // Принудительно устанавливаем высоту для Android
     document.documentElement.style.height = '100%'

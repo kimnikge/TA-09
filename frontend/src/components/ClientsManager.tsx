@@ -1,6 +1,13 @@
 import React, { useState, useEffect, memo, useCallback } from 'react';
-import { Plus, Save, X, MapPin, Building, Trash2, Edit3, RefreshCw, AlertCircle } from 'lucide-react';
+import { Plus, MapPin, Building, Trash2, Edit3, RefreshCw, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { 
+  LoadingButton, 
+  AlertMessage, 
+  Modal, 
+  Form, 
+  ConfirmDialog 
+} from './common';
 
 interface Client {
   id: string;
@@ -8,7 +15,6 @@ interface Client {
   address: string;
   created_by: string;
   created_at: string;
-  // Мягкое удаление на уровне приложения
   is_deleted?: boolean;
   deleted_at?: string;
   deleted_by?: string;
@@ -26,14 +32,38 @@ interface ClientsManagerProps {
 const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  
+  // Модальные состояния
+  const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
+  
+  // Состояния подтверждения
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    show: boolean;
+    client: Client | null;
+    type: 'soft' | 'hard' | 'restore';
+    loading: boolean;
+  }>({ show: false, client: null, type: 'soft', loading: false });
+  
+  // Форма
   const [formData, setFormData] = useState({
     name: '',
     address: ''
   });
+  const [formLoading, setFormLoading] = useState(false);
+  
+  // Уведомления
+  const [alert, setAlert] = useState<{
+    show: boolean;
+    type: 'success' | 'error';
+    message: string;
+  }>({ show: false, type: 'success', message: '' });
+
+  const showAlert = (type: 'success' | 'error', message: string) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ show: false, type: 'success', message: '' }), 3000);
+  };
 
   // Загрузка клиентов
   const loadClients = useCallback(async () => {
@@ -55,6 +85,7 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
 
       if (error) {
         console.error('Ошибка при загрузке клиентов:', error);
+        showAlert('error', 'Ошибка загрузки клиентов');
         return;
       }
 
@@ -71,143 +102,159 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
       setClients(clientsWithStatus);
     } catch (error) {
       console.error('Ошибка при загрузке клиентов:', error);
+      showAlert('error', 'Ошибка загрузки клиентов');
     } finally {
       setLoading(false);
     }
   }, []);
 
+  useEffect(() => {
+    loadClients();
+  }, [loadClients]);
+
   // Функция мягкого удаления
-  const handleSoftDelete = async (clientId: string) => {
-    if (!confirm('Вы уверены, что хотите удалить этого клиента?')) {
-      return;
-    }
+  const handleSoftDelete = async () => {
+    if (!deleteConfirm.client) return;
 
     try {
+      setDeleteConfirm(prev => ({ ...prev, loading: true }));
+
       const deletedClients = JSON.parse(localStorage.getItem('deletedClients') || '{}');
-      
-      // Помечаем клиента как удаленный
-      deletedClients[clientId] = {
+      deletedClients[deleteConfirm.client.id] = {
         is_deleted: true,
         deleted_at: new Date().toISOString(),
         deleted_by: currentUser.id
       };
-      
       localStorage.setItem('deletedClients', JSON.stringify(deletedClients));
-      
-      // Обновляем состояние
-      setClients(prev => 
-        prev.map(client => 
-          client.id === clientId 
-            ? { 
-                ...client, 
-                is_deleted: true,
-                deleted_at: new Date().toISOString(),
-                deleted_by: currentUser.id
-              }
-            : client
-        )
-      );
-      
-      console.log('✅ Клиент помечен как удаленный');
+
+      showAlert('success', 'Клиент удален');
+      loadClients();
+      setDeleteConfirm({ show: false, client: null, type: 'soft', loading: false });
     } catch (error) {
-      console.error('❌ Ошибка при мягком удалении:', error);
+      console.error('Ошибка при удалении клиента:', error);
+      showAlert('error', 'Ошибка удаления клиента');
+      setDeleteConfirm(prev => ({ ...prev, loading: false }));
     }
   };
 
-  // Функция восстановления клиента
-  const handleRestore = async (clientId: string) => {
-    if (!confirm('Вы уверены, что хотите восстановить этого клиента?')) {
-      return;
-    }
+  // Функция восстановления
+  const handleRestore = async () => {
+    if (!deleteConfirm.client) return;
 
     try {
+      setDeleteConfirm(prev => ({ ...prev, loading: true }));
+
       const deletedClients = JSON.parse(localStorage.getItem('deletedClients') || '{}');
-      
-      // Удаляем информацию о удалении
-      delete deletedClients[clientId];
-      
+      delete deletedClients[deleteConfirm.client.id];
       localStorage.setItem('deletedClients', JSON.stringify(deletedClients));
-      
-      // Обновляем состояние
-      setClients(prev => 
-        prev.map(client => 
-          client.id === clientId 
-            ? { 
-                ...client, 
-                is_deleted: false,
-                deleted_at: undefined,
-                deleted_by: undefined
-              }
-            : client
-        )
-      );
-      
-      console.log('✅ Клиент восстановлен');
+
+      showAlert('success', 'Клиент восстановлен');
+      loadClients();
+      setDeleteConfirm({ show: false, client: null, type: 'restore', loading: false });
     } catch (error) {
-      console.error('❌ Ошибка при восстановлении:', error);
+      console.error('Ошибка при восстановлении клиента:', error);
+      showAlert('error', 'Ошибка восстановления клиента');
+      setDeleteConfirm(prev => ({ ...prev, loading: false }));
     }
   };
 
-  // Функция окончательного удаления (только для админов)
-  const handleHardDelete = async (clientId: string) => {
-    if (userRole !== 'admin') {
-      alert('Только администраторы могут окончательно удалить клиентов');
-      return;
-    }
-
-    if (!confirm('ВНИМАНИЕ! Это действие нельзя отменить. Клиент будет удален навсегда. Продолжить?')) {
-      return;
-    }
+  // Функция полного удаления
+  const handlePermanentDelete = async () => {
+    if (!deleteConfirm.client) return;
 
     try {
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', clientId);
-
-      if (error) {
-        console.error('❌ Ошибка при окончательном удалении:', error);
-        return;
-      }
+      setDeleteConfirm(prev => ({ ...prev, loading: true }));
 
       // Удаляем из localStorage
       const deletedClients = JSON.parse(localStorage.getItem('deletedClients') || '{}');
-      delete deletedClients[clientId];
+      delete deletedClients[deleteConfirm.client.id];
       localStorage.setItem('deletedClients', JSON.stringify(deletedClients));
 
-      // Удаляем из состояния
-      setClients(prev => prev.filter(client => client.id !== clientId));
-      
-      console.log('✅ Клиент окончательно удален');
+      // Удаляем из Supabase
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', deleteConfirm.client.id);
+
+      if (error) throw error;
+
+      showAlert('success', 'Клиент удален навсегда');
+      loadClients();
+      setDeleteConfirm({ show: false, client: null, type: 'hard', loading: false });
     } catch (error) {
-      console.error('❌ Ошибка при окончательном удалении:', error);
+      console.error('Ошибка при полном удалении клиента:', error);
+      showAlert('error', 'Ошибка полного удаления клиента');
+      setDeleteConfirm(prev => ({ ...prev, loading: false }));
     }
   };
 
-  // Функция редактирования клиента
-  const handleEdit = (client: Client) => {
-    setEditingClient(client);
-    setFormData({
-      name: client.name,
-      address: client.address
-    });
-    setShowAddForm(true);
+  // Обработка подтверждения действий
+  const handleConfirmAction = () => {
+    switch (deleteConfirm.type) {
+      case 'soft':
+        return handleSoftDelete();
+      case 'restore':
+        return handleRestore();
+      case 'hard':
+        return handlePermanentDelete();
+    }
   };
 
-  // Функция создания/обновления клиента
+  // Открытие диалогов
+  const openDeleteDialog = (client: Client) => {
+    setDeleteConfirm({ show: true, client, type: 'soft', loading: false });
+  };
+
+  const openRestoreDialog = (client: Client) => {
+    setDeleteConfirm({ show: true, client, type: 'restore', loading: false });
+  };
+
+  const openPermanentDeleteDialog = (client: Client) => {
+    setDeleteConfirm({ show: true, client, type: 'hard', loading: false });
+  };
+
+  // Работа с формой
+  const openAddForm = () => {
+    setFormData({ name: '', address: '' });
+    setEditingClient(null);
+    setShowModal(true);
+  };
+
+  const openEditForm = (client: Client) => {
+    setFormData({ name: client.name, address: client.address });
+    setEditingClient(client);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingClient(null);
+    setFormData({ name: '', address: '' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name.trim() || !formData.address.trim()) {
-      alert('Пожалуйста, заполните все поля');
+
+    if (!formData.name || !formData.address) {
+      showAlert('error', 'Заполните все поля');
       return;
     }
 
-    setSubmitting(true);
-    
+    if (formData.name.length < 2) {
+      showAlert('error', 'Имя клиента должно содержать минимум 2 символа');
+      return;
+    }
+
+    if (formData.address.length < 5) {
+      showAlert('error', 'Адрес должен содержать минимум 5 символов');
+      return;
+    }
+
     try {
+      setFormLoading(true);
+
       if (editingClient) {
-        // Обновление существующего клиента
+        // Редактирование
         const { error } = await supabase
           .from('clients')
           .update({
@@ -216,328 +263,307 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ currentUser, userRole }
           })
           .eq('id', editingClient.id);
 
-        if (error) {
-          console.error('❌ Ошибка при обновлении клиента:', error);
-          return;
-        }
-
-        // Обновляем в состоянии
-        setClients(prev => 
-          prev.map(client => 
-            client.id === editingClient.id 
-              ? { 
-                  ...client, 
-                  name: formData.name.trim(),
-                  address: formData.address.trim()
-                }
-              : client
-          )
-        );
-
-        console.log('✅ Клиент обновлен');
+        if (error) throw error;
+        showAlert('success', 'Клиент обновлен');
       } else {
-        // Создание нового клиента
-        const { data, error } = await supabase
+        // Добавление
+        const { error } = await supabase
           .from('clients')
           .insert([{
             name: formData.name.trim(),
             address: formData.address.trim(),
             created_by: currentUser.id
-          }])
-          .select();
+          }]);
 
-        if (error) {
-          console.error('❌ Ошибка при создании клиента:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          setClients(prev => [data[0], ...prev]);
-          console.log('✅ Клиент создан');
-        }
+        if (error) throw error;
+        showAlert('success', 'Клиент добавлен');
       }
 
-      // Закрываем форму
-      setShowAddForm(false);
-      setEditingClient(null);
-      setFormData({ name: '', address: '' });
-      
+      closeModal();
+      loadClients();
     } catch (error) {
-      console.error('❌ Ошибка при сохранении клиента:', error);
+      console.error('Ошибка сохранения клиента:', error);
+      showAlert('error', 'Ошибка сохранения клиента');
     } finally {
-      setSubmitting(false);
+      setFormLoading(false);
     }
   };
-
-  // Отмена редактирования
-  const handleCancel = () => {
-    setShowAddForm(false);
-    setEditingClient(null);
-    setFormData({ name: '', address: '' });
-  };
-
-  // Загрузка при монтировании
-  useEffect(() => {
-    loadClients();
-  }, [loadClients]);
 
   // Фильтрация клиентов
-  const filteredClients = clients.filter(client => {
+  const displayedClients = clients.filter(client => {
     if (showDeleted) {
       return client.is_deleted;
+    } else {
+      return !client.is_deleted;
     }
-    return !client.is_deleted;
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Загрузка клиентов...</span>
-      </div>
-    );
-  }
+  // Получение сообщений для диалогов
+  const getConfirmMessage = () => {
+    const clientName = deleteConfirm.client?.name || '';
+    switch (deleteConfirm.type) {
+      case 'soft':
+        return `Вы уверены, что хотите удалить клиента "${clientName}"?`;
+      case 'restore':
+        return `Вы уверены, что хотите восстановить клиента "${clientName}"?`;
+      case 'hard':
+        return `ВНИМАНИЕ! Это действие нельзя отменить. Клиент "${clientName}" будет удален навсегда. Продолжить?`;
+      default:
+        return '';
+    }
+  };
+
+  const getConfirmTitle = () => {
+    switch (deleteConfirm.type) {
+      case 'soft':
+        return 'Удалить клиента';
+      case 'restore':
+        return 'Восстановить клиента';
+      case 'hard':
+        return 'Удалить навсегда';
+      default:
+        return '';
+    }
+  };
+
+  const getConfirmButtonText = () => {
+    switch (deleteConfirm.type) {
+      case 'soft':
+        return 'Удалить';
+      case 'restore':
+        return 'Восстановить';
+      case 'hard':
+        return 'Удалить навсегда';
+      default:
+        return 'Подтвердить';
+    }
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">Управление клиентами</h2>
+    <div className="space-y-6">
+      {/* Заголовок */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center">
+          <Building className="w-6 h-6 text-blue-600 mr-3" />
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Клиенты</h2>
+            <p className="text-sm text-gray-500">
+              {showDeleted ? 'Удаленные клиенты' : 'Активные клиенты'} ({displayedClients.length})
+            </p>
+          </div>
+        </div>
+        
         <div className="flex gap-2">
-          <button
+          <LoadingButton
             onClick={() => setShowDeleted(!showDeleted)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              showDeleted 
-                ? 'bg-red-100 text-red-600 border border-red-200' 
-                : 'bg-gray-100 text-gray-600 border border-gray-200'
-            }`}
+            variant="secondary"
+            loading={false}
           >
             {showDeleted ? 'Показать активных' : 'Показать удаленных'}
-          </button>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          </LoadingButton>
+          
+          <LoadingButton
+            onClick={loadClients}
+            variant="secondary"
+            loading={loading}
           >
-            <Plus size={20} />
-            Добавить клиента
-          </button>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Обновить
+          </LoadingButton>
+          
+          {!showDeleted && (
+            <LoadingButton
+              onClick={openAddForm}
+              variant="primary"
+              loading={false}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Добавить клиента
+            </LoadingButton>
+          )}
         </div>
       </div>
 
-      {/* Форма добавления/редактирования */}
-      {showAddForm && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-blue-800 mb-3">
-            {editingClient ? 'Редактировать клиента' : 'Добавить нового клиента'}
-          </h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Название точки
-              </label>
+      {/* Уведомления */}
+      {alert.show && (
+        <AlertMessage
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert({ show: false, type: 'success', message: '' })}
+        />
+      )}
+
+      {/* Список клиентов */}
+      {loading ? (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      ) : displayedClients.length === 0 ? (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="text-center py-8">
+            <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {showDeleted ? 'Нет удаленных клиентов' : 'Нет клиентов'}
+            </h3>
+            <p className="text-gray-500">
+              {showDeleted 
+                ? 'Удаленные клиенты не найдены' 
+                : 'Добавьте первого клиента'
+              }
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {displayedClients.map((client) => (
+            <div 
+              key={client.id} 
+              className={`bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow ${
+                client.is_deleted ? 'opacity-60' : ''
+              }`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium text-gray-900 mb-1">
+                    {client.name}
+                  </h3>
+                  <p className="text-sm text-gray-600 flex items-center">
+                    <MapPin className="w-4 h-4 mr-1" />
+                    {client.address}
+                  </p>
+                </div>
+                
+                {client.is_deleted && (
+                  <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                    Удален
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                <p className="text-xs text-gray-500">
+                  Создан: {new Date(client.created_at).toLocaleDateString('ru-RU')}
+                </p>
+                
+                <div className="flex gap-2">
+                  {client.is_deleted ? (
+                    <>
+                      <LoadingButton
+                        onClick={() => openRestoreDialog(client)}
+                        variant="success"
+                        loading={false}
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </LoadingButton>
+                      {userRole === 'admin' && (
+                        <LoadingButton
+                          onClick={() => openPermanentDeleteDialog(client)}
+                          variant="danger"
+                          loading={false}
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                        </LoadingButton>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <LoadingButton
+                        onClick={() => openEditForm(client)}
+                        variant="secondary"
+                        loading={false}
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </LoadingButton>
+                      <LoadingButton
+                        onClick={() => openDeleteDialog(client)}
+                        variant="danger"
+                        loading={false}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </LoadingButton>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Модальное окно добавления/редактирования */}
+      <Modal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={editingClient ? 'Редактировать клиента' : 'Добавить клиента'}
+        size="md"
+      >
+        <div className="p-6">
+          <Form onSubmit={handleSubmit} loading={formLoading}>
+            <Form.Field
+              label="Название клиента"
+              required
+              error={!formData.name ? 'Введите название клиента' : ''}
+            >
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Например: Магазин на Ленина"
-                required
+                placeholder="Введите название клиента"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Адрес
-              </label>
-              <input
-                type="text"
+            </Form.Field>
+
+            <Form.Field
+              label="Адрес"
+              required
+              error={!formData.address ? 'Введите адрес' : ''}
+            >
+              <textarea
                 value={formData.address}
                 onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Например: ул. Ленина, д. 10"
-                required
+                rows={3}
+                placeholder="Введите адрес клиента"
               />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {submitting ? (
-                  <>
-                    <RefreshCw size={18} className="animate-spin" />
-                    Сохранение...
-                  </>
-                ) : (
-                  <>
-                    <Save size={18} />
-                    {editingClient ? 'Обновить' : 'Сохранить'}
-                  </>
-                )}
-              </button>
-              <button
+            </Form.Field>
+
+            <Form.Actions>
+              <LoadingButton
                 type="button"
-                onClick={handleCancel}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors flex items-center gap-2"
+                onClick={closeModal}
+                variant="secondary"
+                loading={false}
               >
-                <X size={18} />
                 Отмена
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Список клиентов */}
-      <div className="space-y-6">
-        {filteredClients.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <Building size={64} className="mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium mb-2">
-              {showDeleted 
-                ? 'Нет удаленных клиентов' 
-                : 'Нет активных клиентов'}
-            </p>
-            <p className="text-sm">
-              {showDeleted 
-                ? 'Все клиенты активны' 
-                : 'Добавьте первого клиента для начала работы'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-6">
-            {filteredClients.map((client) => (
-              <div 
-                key={client.id} 
-                className={`border-2 rounded-xl p-6 transition-all shadow-sm hover:shadow-md ${
-                  client.is_deleted 
-                    ? 'border-red-200 bg-red-50/50' 
-                    : 'border-gray-200 bg-white hover:border-blue-200'
-                }`}
+              </LoadingButton>
+              <LoadingButton
+                type="submit"
+                variant="primary"
+                loading={formLoading}
               >
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1">
-                    {/* Заголовок клиента */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={`p-2 rounded-lg ${
-                        client.is_deleted 
-                          ? 'bg-red-100 text-red-600' 
-                          : 'bg-blue-100 text-blue-600'
-                      }`}>
-                        <Building size={24} />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className={`text-xl font-bold ${
-                          client.is_deleted ? 'text-red-800' : 'text-gray-800'
-                        }`}>
-                          {client.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Торговая точка
-                        </p>
-                      </div>
-                      {client.is_deleted && (
-                        <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-                          Удален
-                        </span>
-                      )}
-                    </div>
+                {editingClient ? 'Обновить' : 'Добавить'}
+              </LoadingButton>
+            </Form.Actions>
+          </Form>
+        </div>
+      </Modal>
 
-                    {/* Детали клиента */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div className="flex items-start gap-3">
-                        <div className="p-1 rounded bg-gray-100 text-gray-600 mt-1">
-                          <MapPin size={16} />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-700">Адрес</p>
-                          <p className="text-gray-600">{client.address}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-3">
-                        <div className="p-1 rounded bg-gray-100 text-gray-600 mt-1">
-                          <Building size={16} />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-700">Тип</p>
-                          <p className="text-gray-600">Торговая точка</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Информация о создании */}
-                    <div className="border-t pt-4 text-sm text-gray-500">
-                      <div className="flex items-center gap-4">
-                        <span>
-                          <strong>Создан:</strong> {new Date(client.created_at).toLocaleDateString('ru-RU', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </span>
-                        {client.deleted_at && (
-                          <span className="text-red-500">
-                            <strong>Удален:</strong> {new Date(client.deleted_at).toLocaleDateString('ru-RU', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Кнопки действий */}
-                  <div className="flex flex-col gap-2">
-                    {client.is_deleted ? (
-                      <>
-                        <button
-                          onClick={() => handleRestore(client.id)}
-                          className="bg-green-100 text-green-700 p-3 rounded-lg hover:bg-green-200 transition-colors flex items-center gap-2"
-                          title="Восстановить клиента"
-                        >
-                          <RefreshCw size={18} />
-                          <span className="text-sm font-medium">Восстановить</span>
-                        </button>
-                        {userRole === 'admin' && (
-                          <button
-                            onClick={() => handleHardDelete(client.id)}
-                            className="bg-red-100 text-red-700 p-3 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
-                            title="Удалить окончательно (только для админов)"
-                          >
-                            <AlertCircle size={18} />
-                            <span className="text-sm font-medium">Удалить навсегда</span>
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleEdit(client)}
-                          className="bg-blue-100 text-blue-700 p-3 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
-                          title="Редактировать клиента"
-                        >
-                          <Edit3 size={18} />
-                          <span className="text-sm font-medium">Редактировать</span>
-                        </button>
-                        <button
-                          onClick={() => handleSoftDelete(client.id)}
-                          className="bg-red-100 text-red-700 p-3 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
-                          title="Удалить клиента"
-                        >
-                          <Trash2 size={18} />
-                          <span className="text-sm font-medium">Удалить</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Диалог подтверждения */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.show}
+        onConfirm={handleConfirmAction}
+        onCancel={() => setDeleteConfirm({ show: false, client: null, type: 'soft', loading: false })}
+        title={getConfirmTitle()}
+        message={getConfirmMessage()}
+        confirmText={getConfirmButtonText()}
+        confirmVariant={deleteConfirm.type === 'hard' ? 'danger' : 'primary'}
+        loading={deleteConfirm.loading}
+      />
     </div>
   );
 };

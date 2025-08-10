@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, User, Package, Send, Eye, X } from 'lucide-react';
+import { ShoppingCart, Plus, User, Package, Send, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import ProductSearch from './ProductSearch';
+import CompactProductCard from './CompactProductCard';
 
 interface Product {
   id: string; // UUID в Supabase
@@ -406,6 +408,15 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 <h2 className="text-lg font-semibold">Каталог товаров</h2>
               </div>
               
+              {/* Поиск товаров */}
+              <div className="mb-6">
+                <ProductSearch
+                  products={products}
+                  onProductSelect={(product) => updateQuantity(product.id, 1)}
+                  placeholder="Быстрый поиск товаров..."
+                />
+              </div>
+              
               {/* Категории */}
               <div className="flex flex-wrap gap-2 mb-6">
                 {categories.map(category => (
@@ -423,67 +434,30 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 ))}
               </div>
 
-              {/* Товары */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Товары - компактные карточки */}
+              <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
                 {currentProducts.map((product: Product) => (
-                  <div key={product.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-4">
-                      <div className="relative">
-                        <img 
-                          src={product.image_url || '/default-product.png'} 
-                          alt={product.name}
-                          className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                          onClick={() => {
-                            setSelectedImage(product.image_url || '');
-                            setShowImageModal(true);
-                          }}
-                        />
-                        <Eye className="absolute top-1 right-1 text-white bg-black bg-opacity-50 rounded p-1" size={16} />
-                      </div>
-                      
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-800 mb-1">{product.name}</h3>
-                        <p className="text-blue-600 font-bold mb-2">{product.price} ₸ / {product.unit || 'шт'}</p>
-                        
-                        <div className="flex items-center gap-2 mb-2">
-                          <button 
-                            onClick={() => updateQuantity(product.id, -1)}
-                            className="p-1 bg-gray-200 rounded hover:bg-gray-300"
-                            disabled={!cart[product.id]}
-                          >
-                            <Minus size={16} />
-                          </button>
-                          
-                          <input
-                            type="number"
-                            min="0"
-                            value={cart[product.id] || ''}
-                            onChange={(e) => setQuantityDirectly(product.id, e.target.value)}
-                            className="w-16 text-center font-semibold border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="0"
-                          />
-                          
-                          <button 
-                            onClick={() => updateQuantity(product.id, 1)}
-                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                          >
-                            <Plus size={16} />
-                          </button>
-                        </div>
-
-                        {cart[product.id] && (
-                          <input 
-                            type="text"
-                            placeholder="Комментарий..."
-                            value={comments[product.id] || ''}
-                            onChange={(e) => setComments(prev => ({...prev, [product.id]: e.target.value}))}
-                            className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <CompactProductCard
+                    key={product.id}
+                    product={product}
+                    quantity={cart[product.id] || 0}
+                    comment={comments[product.id] || ''}
+                    onQuantityChange={updateQuantity}
+                    onQuantitySet={setQuantityDirectly}
+                    onCommentChange={(productId, comment) => 
+                      setComments(prev => ({ ...prev, [productId]: comment }))
+                    }
+                    onImageClick={(imageUrl) => {
+                      setSelectedImage(imageUrl);
+                      setShowImageModal(true);
+                    }}
+                  />
                 ))}
+              </div>
+              
+              {/* Показать количество товаров */}
+              <div className="mt-4 text-sm text-gray-500 text-center">
+                Показано {currentProducts.length} товаров в категории "{categories.find(c => c.id === selectedCategory)?.name}"
               </div>
             </div>
 

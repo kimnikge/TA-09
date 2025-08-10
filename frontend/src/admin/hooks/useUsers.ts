@@ -1,84 +1,116 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-
-export interface UserProfile {
-  id: string;
-  email?: string;
-  name?: string;
-  full_name?: string;
-  role?: string;
-  approved?: boolean;
-  created_at?: string;
-}
+import { checkUserAuth } from '../../utils/authHelpers';
+import { safeExecute } from '../../utils/errorHandler';
+import { log } from '../../utils/logger';
+import { UserProfile, UserRole } from '../../types/user';
 
 export const useUsers = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUsers = async () => {
-    try {
+  // Общая функция загрузки пользователей с контролем состояния mounting
+  const fetchUsers = async (isMountedRef?: { current: boolean }) => {
+    const result = await safeExecute(async () => {
       setLoading(true);
       setError(null);
-      console.log('📥 useUsers: Загрузка пользователей из БД...');
+      log.db('Загрузка пользователей из БД');
       
       const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('*');
       
       if (fetchError) {
-        console.error('❌ useUsers: Ошибка запроса к БД:', fetchError);
         throw fetchError;
       }
       
-      console.log('✅ useUsers: Пользователи загружены:', data?.length || 0);
-      console.log('📋 useUsers: Данные пользователей:', data?.map(u => ({ 
-        id: u.id, 
-        email: u.email, 
-        approved: u.approved,
-        role: u.role 
-      })));
+      // Проверяем mounted состояние если передана ссылка
+      if (isMountedRef && !isMountedRef.current) {
+        log.debug('Компонент размонтирован, прерываем обновление', undefined, 'useUsers');
+        return;
+      }
+      
+      log.db('Пользователи загружены', { count: data?.length || 0 });
+      log.debug('Данные пользователей', { 
+        users: data?.map(u => ({ 
+          id: u.id, 
+          email: u.email, 
+          approved: u.approved,
+          role: u.role 
+        }))
+      }, 'useUsers');
       
       setUsers(data || []);
       setError(null);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке пользователей';
-      console.error('❌ useUsers: Критическая ошибка:', errorMessage);
-      setError(errorMessage);
-      setUsers([]); // Очищаем пользователей при ошибке
-    } finally {
-      setLoading(false);
+    }, 'загрузки пользователей');
+
+    if (!result.success) {
+      // Проверяем mounted состояние перед обновлением ошибки
+      if (isMountedRef && !isMountedRef.current) {
+        log.debug('Компонент размонтирован, пропускаем ошибку', undefined, 'useUsers');
+        return;
+      }
+      
+      setError(result.error || 'Ошибка загрузки пользователей');
+      setUsers([]);
     }
+    
+    setLoading(false);
   };
 
-  const updateUserRole = async (userId: string, newRole: string) => {
-    try {
+  const updateUserRole = async (userId: string, newRole: UserRole): Promise<boolean> => {
+    const result = await safeExecute(async () => {
+      log.db('Обновление роли пользователя', { userId, newRole });
+      
+      // Используем утилитарную функцию для проверки авторизации
+      const authCheck = await checkUserAuth();
+      if (!authCheck.success) {
+        throw new Error(authCheck.error || 'Ошибка авторизации');
+      }
+      
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ role: newRole })
         .eq('id', userId);
       
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
       
-      // Обновляем локальное состояние
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
-      ));
+      // Безопасное обновление локального состояния
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId ? { ...user, role: newRole } : user
+        )
+      );
       
-      console.log('✅ Роль пользователя обновлена');
+      log.db('Роль пользователя обновлена', { userId, newRole });
       return true;
-    } catch (err) {
-      console.error('❌ Ошибка обновления роли:', err);
-      setError(err instanceof Error ? err.message : 'Ошибка при обновлении роли');
-      return false;
+    }, 'обновления роли пользователя', false);
+
+    if (!result.success) {
+      setError(result.error || 'Ошибка обновления роли');
     }
+    return result.data || false;
   };
 
-  const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
-    try {
+  const toggleUserStatus = async (userId: string, currentStatus: boolean): Promise<boolean> => {
+    const result = await safeExecute(async () => {
       const newStatus = !currentStatus;
+      log.db('Переключение статуса пользователя', { 
+        userId, 
+        currentStatus, 
+        newStatus 
+      });
       
-      const { error: updateError } = await supabase
+      // Используем утилитарную функцию для проверки авторизации
+      const authCheck = await checkUserAuth();
+      if (!authCheck.success) {
+        throw new Error(authCheck.error || 'Ошибка авторизации');
+      }
+      
+      const { data, error: updateError } = await supabase
         .from('profiles')
         .update({ approved: newStatus })
         .eq('id', userId)
@@ -88,48 +120,116 @@ export const useUsers = () => {
         throw updateError;
       }
       
-      // НЕМЕДЛЕННО И ФОРСИРОВАННО обновляем локальное состояние
+      if (!data || data.length === 0) {
+        log.error('Пользователь не найден или не обновлен', {
+          userId,
+          reason: 'Нет прав на обновление или пользователь не существует'
+        }, 'useUsers');
+        throw new Error('Не удалось обновить статус пользователя. Проверьте права доступа.');
+      }
+      
+      log.db('Статус успешно обновлен в БД', data[0]);
+      
+      // Безопасное обновление локального состояния с проверками
       setUsers(prevUsers => {
+        // Проверяем, что пользователь все еще существует в локальном состоянии
+        const userExists = prevUsers.find(user => user.id === userId);
+        if (!userExists) {
+          log.warn('Пользователь не найден в локальном состоянии', { userId }, 'useUsers');
+          return prevUsers;
+        }
+        
+        // Проверяем, что данные из БД валидны
+        if (!data[0] || data[0].id !== userId) {
+          log.error('Неверные данные из БД для обновления', { userId, data: data[0] }, 'useUsers');
+          return prevUsers;
+        }
+        
         const updatedUsers = prevUsers.map(user => 
-          user.id === userId ? { ...user, approved: newStatus } : user
+          user.id === userId 
+            ? { ...user, approved: data[0].approved }
+            : user
         );
+        
+        log.debug('Локальное состояние безопасно обновлено', undefined, 'useUsers');
         return updatedUsers;
       });
       
       return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка при обновлении статуса');
-      return false;
+    }, 'переключения статуса пользователя', false);
+
+    if (!result.success) {
+      setError(result.error || 'Ошибка обновления статуса');
     }
+    return result.data || false;
   };
 
-  const deleteUser = async (userId: string) => {
-    if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
-      return false;
-    }
-    
-    try {
-      const { error: deleteError } = await supabase
+  const deleteUser = async (userId: string): Promise<boolean> => {
+    const result = await safeExecute(async () => {
+      log.db('Попытка удаления пользователя', { userId });
+      
+      // Используем утилитарную функцию для проверки авторизации
+      const authCheck = await checkUserAuth();
+      if (!authCheck.success) {
+        throw new Error(authCheck.error || 'Ошибка авторизации');
+      }
+      
+      const { data, error: deleteError } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', userId);
+        .eq('id', userId)
+        .select('id, email');
       
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        throw deleteError;
+      }
       
-      // Обновляем локальное состояние
-      setUsers(users.filter(user => user.id !== userId));
+      if (!data || data.length === 0) {
+        log.error('Пользователь не найден или не удален', {
+          userId,
+          reason: 'Нет прав на удаление или пользователь не существует'
+        }, 'useUsers');
+        throw new Error('Не удалось удалить пользователя. Проверьте права доступа.');
+      }
       
-      console.log('✅ Пользователь удален');
+      log.db('Пользователь успешно удален из БД', data[0]);
+      
+      // Безопасное удаление из локального состояния
+      setUsers(prevUsers => {
+        const userToRemove = prevUsers.find(user => user.id === userId);
+        if (!userToRemove) {
+          log.warn('Пользователь уже отсутствует в локальном состоянии', { userId }, 'useUsers');
+          return prevUsers;
+        }
+        
+        const filteredUsers = prevUsers.filter(user => user.id !== userId);
+        log.debug('Пользователь безопасно удален из локального состояния', undefined, 'useUsers');
+        return filteredUsers;
+      });
+      
+      log.db('Удаление завершено успешно', { userId });
       return true;
-    } catch (err) {
-      console.error('❌ Ошибка удаления пользователя:', err);
-      setError(err instanceof Error ? err.message : 'Ошибка при удалении пользователя');
-      return false;
+    }, 'удаления пользователя', false);
+
+    if (!result.success) {
+      setError(result.error || 'Ошибка удаления пользователя');
     }
+    return result.data || false;
   };
 
   useEffect(() => {
-    fetchUsers();
+    // Флаг для предотвращения обновления состояния после unmount
+    const isMounted = true;
+    const isMountedRef = { current: isMounted };
+    
+    // Используем общую функцию fetchUsers с контролем mounting
+    fetchUsers(isMountedRef);
+    
+    // Cleanup функция
+    return () => {
+      isMountedRef.current = false;
+      log.debug('Cleanup выполнен, isMounted = false', undefined, 'useUsers');
+    };
   }, []);
 
   return {

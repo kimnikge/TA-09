@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
 import { Shield, Menu, X } from 'lucide-react';
+import { log } from '../../utils/logger';
 import AdminNavigation from '../components/AdminNavigation';
 import UsersSection from './UsersSection';
 import ProductsSection from '../components/ProductsSection';
 import OrdersSection from '../components/OrdersSection';
 import ReportsSection from '../components/ReportsSection';
 import SettingsSection from '../components/SettingsSection';
+import UserManagementTestSection from '../components/UserManagementTestSection';
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('users');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  console.log('🎯 AdminDashboard: Рендеринг с активной вкладкой:', activeTab);
+  log.ui('AdminDashboard рендеринг', { activeTab });
 
   // Обёртка для setActiveTab с логированием
   const handleTabChange = (newTab: string) => {
-    console.log('🔄 AdminDashboard: Смена вкладки с', activeTab, 'на', newTab);
+    log.ui('Смена вкладки админ-панели', { from: activeTab, to: newTab });
     setActiveTab(newTab);
-    console.log('✅ AdminDashboard: Вкладка изменена на', newTab);
+    log.ui('Вкладка изменена', { activeTab: newTab });
   };
 
   return (
@@ -73,6 +75,7 @@ const AdminDashboard: React.FC = () => {
           {activeTab === 'products' && <ProductsSection />}
           {activeTab === 'orders' && <OrdersSection />}
           {activeTab === 'reports' && <ReportsSection />}
+          {activeTab === 'tests' && <UserManagementTestSection />}
           {activeTab === 'settings' && <SettingsSection />}
         </div>
       </main>
