@@ -246,3 +246,40 @@ input, textarea, select {
   border-bottom-color: #bbf7d0;
   color: #16a34a;
 }
+
+/* Мобильная оптимизация для корзины */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Улучшенные стили для кнопок на мобильных */
+@media (max-width: 768px) {
+  .cart-button {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+  
+  .cart-input {
+    min-height: 44px;
+    font-size: 16px;
+    /* Предотвращаем зум на iOS */
+    transform: translateZ(0);
+  }
+  
+  /* Предотвращаем зум при фокусе на input */
+  input[type="number"] {
+    font-size: 16px;
+  }
+}
+
+/* Стили для анимации активных элементов */
+.cart-button:active {
+  transform: scale(0.95);
+}
+
+/* Улучшенная видимость фокуса для доступности */
+.cart-input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}

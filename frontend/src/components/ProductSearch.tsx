@@ -33,17 +33,19 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Фильтрация товаров по поисковому запросу
-  const filteredProducts = searchTerm.length >= 2 
+  const filteredProducts = searchTerm.length >= 1 
     ? products.filter(product => 
         product.active !== false && 
         product.name.toLowerCase().includes(searchTerm.toLowerCase())
-      ).slice(0, 8) // Показываем максимум 8 результатов
+      ).slice(0, 10) // Показываем максимум 10 результатов
     : [];
 
   // Обработка выбора товара
   const handleProductSelect = (product: Product) => {
+    console.log('ProductSearch: выбран товар', product.name);
     onProductSelect(product);
     setSearchTerm('');
     setIsOpen(false);
@@ -85,7 +87,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
   // Закрытие при клике вне компонента
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setFocusedIndex(-1);
       }
@@ -116,7 +118,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative ${className}`}>
       {/* Поле поиска */}
       <div className="relative">
         <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -152,7 +154,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
               <li key={product.id}>
                 <button
                   onClick={() => handleProductSelect(product)}
-                  className={`w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors ${
+                  className={`w-full px-4 py-4 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors ${
                     index === focusedIndex ? 'bg-blue-50' : ''
                   }`}
                 >
@@ -165,15 +167,17 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
                       />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">
+                      <div className="font-semibold text-gray-900 truncate mb-1 text-sm leading-tight">
                         {product.name}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {product.price.toLocaleString('ru-RU')} ₽ / {product.unit || 'шт'}
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full text-xs">
+                          {product.category}
+                        </span>
+                        <span className="text-gray-600 font-medium">
+                          {product.price.toLocaleString('ru-RU')} ₸ / {product.unit || 'шт'}
+                        </span>
                       </div>
-                    </div>
-                    <div className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                      {product.category}
                     </div>
                   </div>
                 </button>
@@ -189,7 +193,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
       )}
 
       {/* Сообщение когда нет результатов */}
-      {isOpen && searchTerm.length >= 2 && filteredProducts.length === 0 && (
+      {isOpen && searchTerm.length >= 1 && filteredProducts.length === 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
           <div className="px-4 py-3 text-gray-500 text-center">
             Товары не найдены

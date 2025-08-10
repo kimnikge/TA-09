@@ -78,6 +78,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [addedProductNotification, setAddedProductNotification] = useState<string | null>(null);
 
   // Загрузка данных из Supabase
   useEffect(() => {
@@ -154,6 +155,9 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
   };
 
   const updateQuantity = (productId: string, change: number) => {
+    const product = products.find(p => p.id === productId);
+    console.log('OrderForm: updateQuantity вызван', { productId, change, productName: product?.name });
+    
     setCart(prev => {
       const newCart = { ...prev };
       const currentQty = newCart[productId] || 0;
@@ -163,25 +167,61 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
         delete newCart[productId];
       } else {
         newCart[productId] = newQty;
+        
+        // Показываем уведомление о добавлении товара
+        if (change > 0 && product) {
+          setAddedProductNotification(`${product.name} добавлен в корзину`);
+          setTimeout(() => setAddedProductNotification(null), 3000);
+        }
       }
       
+      console.log('OrderForm: корзина обновлена', newCart);
       return newCart;
     });
   };
 
   const setQuantityDirectly = (productId: string, value: string) => {
+    const product = products.find(p => p.id === productId);
+    
+    // Разрешаем пустое значение для редактирования
+    if (value === '') {
+      setCart(prev => {
+        const newCart = { ...prev };
+        newCart[productId] = 0; // Временно устанавливаем 0 для редактирования
+        return newCart;
+      });
+      return;
+    }
+    
     const qty = parseInt(value) || 0;
     setCart(prev => {
       const newCart = { ...prev };
       
       if (qty <= 0) {
         delete newCart[productId];
+        if (product && value !== '') {
+          setAddedProductNotification(`${product.name} удален из корзины`);
+          setTimeout(() => setAddedProductNotification(null), 3000);
+        }
       } else {
         newCart[productId] = qty;
       }
       
       return newCart;
     });
+  };
+
+  // Новая функция для обработки потери фокуса
+  const handleQuantityBlur = (productId: string, value: string) => {
+    const qty = parseInt(value) || 0;
+    if (qty <= 0) {
+      // Если значение пустое или 0, устанавливаем минимум 1
+      setCart(prev => {
+        const newCart = { ...prev };
+        newCart[productId] = 1;
+        return newCart;
+      });
+    }
   };
 
   const addNewClient = async () => {
@@ -377,6 +417,18 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-4xl mx-auto">
+        {/* Уведомление о добавлении товара */}
+        {addedProductNotification && (
+          <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-pulse">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {addedProductNotification}
+            </div>
+          </div>
+        )}
+        
         {/* Заголовок */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between">
@@ -412,7 +464,10 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
               <div className="mb-6">
                 <ProductSearch
                   products={products}
-                  onProductSelect={(product) => updateQuantity(product.id, 1)}
+                  onProductSelect={(product) => {
+                    console.log('OrderForm: получен товар из поиска', product.name);
+                    updateQuantity(product.id, 1);
+                  }}
                   placeholder="Быстрый поиск товаров..."
                 />
               </div>
@@ -542,9 +597,9 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                     {/* Заголовок таблицы */}
                     <div className="bg-gray-200 px-3 py-2 grid grid-cols-12 gap-2 text-xs font-semibold text-gray-700">
                       <div className="col-span-5">Наименование</div>
-                      <div className="col-span-2 text-center">Кол-во</div>
+                      <div className="col-span-3 text-center">Количество</div>
                       <div className="col-span-2 text-right">Цена</div>
-                      <div className="col-span-3 text-right">Сумма</div>
+                      <div className="col-span-2 text-right">Сумма</div>
                     </div>
                     
                     {/* Строки товаров */}
@@ -556,18 +611,74 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                         const itemTotal = product.price * qty;
                         
                         return (
-                          <div key={productId} className="px-3 py-2 grid grid-cols-12 gap-2 text-xs border-b border-gray-200 last:border-b-0">
-                            <div className="col-span-5 truncate" title={product.name}>
-                              {product.name}
+                          <div key={productId} className="px-3 py-3 grid grid-cols-12 gap-2 text-xs border-b border-gray-200 last:border-b-0">
+                            <div className="col-span-5 flex flex-col">
+                              <div className="truncate font-medium" title={product.name}>
+                                {product.name}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {product.price.toLocaleString()} ₸ за {product.unit || 'шт'}
+                              </div>
                             </div>
-                            <div className="col-span-2 text-center">
-                              {qty} {product.unit || 'шт'}
+                            <div className="col-span-3 flex flex-col items-center gap-2">
+                              {/* Кнопки управления количеством */}
+                              <div className="flex items-center gap-2 w-full">
+                                <button 
+                                  onClick={() => updateQuantity(productId, -1)}
+                                  className="cart-button w-8 h-8 bg-red-100 hover:bg-red-200 active:bg-red-300 text-red-600 rounded-full text-lg flex items-center justify-center transition-colors touch-manipulation"
+                                  title="Уменьшить количество"
+                                >
+                                  −
+                                </button>
+                                
+                                <div className="flex-1 flex flex-col items-center">
+                                  <input
+                                    type="number"
+                                    value={cart[productId] === 0 ? '' : cart[productId]}
+                                    onChange={(e) => setQuantityDirectly(productId, e.target.value)}
+                                    onBlur={(e) => handleQuantityBlur(productId, e.target.value)}
+                                    className="cart-input w-16 h-8 text-center border-2 border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                    min="1"
+                                    placeholder="1"
+                                  />
+                                  <span className="text-xs text-gray-500 mt-1">{product.unit || 'шт'}</span>
+                                </div>
+                                
+                                <button 
+                                  onClick={() => updateQuantity(productId, 1)}
+                                  className="cart-button w-8 h-8 bg-green-100 hover:bg-green-200 active:bg-green-300 text-green-600 rounded-full text-lg flex items-center justify-center transition-colors touch-manipulation"
+                                  title="Увеличить количество"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              
+                              {/* Кнопка удаления */}
+                              <button 
+                                onClick={() => {
+                                  setCart(prev => {
+                                    const newCart = { ...prev };
+                                    delete newCart[productId];
+                                    return newCart;
+                                  });
+                                  setAddedProductNotification(`${product.name} удален из корзины`);
+                                  setTimeout(() => setAddedProductNotification(null), 3000);
+                                }}
+                                className="cart-button w-20 h-6 bg-red-100 hover:bg-red-200 active:bg-red-300 text-red-600 rounded-full text-xs flex items-center justify-center transition-colors touch-manipulation"
+                                title="Удалить товар"
+                              >
+                                Удалить
+                              </button>
                             </div>
-                            <div className="col-span-2 text-right">
-                              {product.price.toLocaleString()} ₸
+                            <div className="col-span-2 text-right self-center">
+                              <div className="font-medium">
+                                {product.price.toLocaleString()} ₸
+                              </div>
                             </div>
-                            <div className="col-span-3 text-right font-semibold">
-                              {itemTotal.toLocaleString()} ₸
+                            <div className="col-span-2 text-right self-center">
+                              <div className="font-bold text-blue-600">
+                                {itemTotal.toLocaleString()} ₸
+                              </div>
                             </div>
                           </div>
                         );
@@ -575,10 +686,10 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                     </div>
                     
                     {/* Итого */}
-                    <div className="bg-blue-50 px-3 py-2 grid grid-cols-12 gap-2 text-sm font-bold">
-                      <div className="col-span-7">ИТОГО:</div>
-                      <div className="col-span-2 text-center">{getTotalItems()} шт</div>
-                      <div className="col-span-3 text-right text-blue-600">
+                    <div className="bg-blue-50 px-3 py-3 grid grid-cols-12 gap-2 text-sm font-bold">
+                      <div className="col-span-8">ИТОГО:</div>
+                      <div className="col-span-2 text-right">{getTotalItems()} шт</div>
+                      <div className="col-span-2 text-right text-blue-600">
                         {getTotalPrice().toLocaleString()} ₸
                       </div>
                     </div>
