@@ -61,7 +61,7 @@ const CompactProductCard: React.FC<CompactProductCardProps> = ({
                 {product.name}
               </h3>
               <p className="text-blue-600 font-semibold text-sm mt-0.5">
-                {product.price.toLocaleString('ru-RU')} ₽ / {product.unit || 'шт'}
+                {product.price.toLocaleString('ru-RU')} тг / {product.unit || 'шт'}
               </p>
             </div>
             

@@ -39,7 +39,7 @@ const ReportsSection: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100">Общий доход</p>
-                <p className="text-2xl font-bold">₽0</p>
+                <p className="text-2xl font-bold">0 тг</p>
               </div>
               <TrendingUp className="w-8 h-8 text-purple-200" />
             </div>

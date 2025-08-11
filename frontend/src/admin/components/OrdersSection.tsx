@@ -112,6 +112,7 @@ const OrdersSection: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showSummaryReportModal, setShowSummaryReportModal] = useState(false);
   
   // Фильтры
   const [filters, setFilters] = useState<OrderFilters>({
@@ -344,6 +345,109 @@ const OrdersSection: React.FC = () => {
     }
   };
 
+  // Генерация сводного отчета по товарам
+  const generateSummaryReport = (dateFrom: string, dateTo: string) => {
+    try {
+      // Фильтруем заказы по выбранному периоду
+      const filteredOrdersForReport = orders.filter(order => {
+        const orderDate = new Date(order.created_at);
+        const fromDate = dateFrom ? new Date(dateFrom) : new Date('1900-01-01');
+        const toDate = dateTo ? new Date(dateTo + 'T23:59:59') : new Date();
+        
+        return orderDate >= fromDate && orderDate <= toDate;
+      });
+
+      // Собираем все товары из отфильтрованных заказов
+      const productSummary: { [productId: string]: {
+        name: string;
+        category: string;
+        unit: string;
+        price: number;
+        totalQuantity: number;
+        totalAmount: number;
+      }} = {};
+
+      filteredOrdersForReport.forEach(order => {
+        const items = orderItems[order.id] || [];
+        items.forEach(item => {
+          const product = products[item.product_id];
+          if (!product) return;
+
+          if (!productSummary[item.product_id]) {
+            productSummary[item.product_id] = {
+              name: product.name,
+              category: product.category,
+              unit: product.unit,
+              price: item.price, // Цена из заказа (может меняться)
+              totalQuantity: 0,
+              totalAmount: 0
+            };
+          }
+
+          productSummary[item.product_id].totalQuantity += item.quantity;
+          productSummary[item.product_id].totalAmount += item.quantity * item.price;
+        });
+      });
+
+      // Преобразуем в массив для сортировки
+      const reportData = Object.values(productSummary)
+        .filter(item => item.totalQuantity > 0)
+        .sort((a, b) => b.totalAmount - a.totalAmount); // Сортируем по сумме убывания
+
+      return {
+        data: reportData,
+        period: {
+          from: dateFrom || 'Начало',
+          to: dateTo || 'Настоящее время'
+        },
+        totalOrders: filteredOrdersForReport.length,
+        totalProducts: reportData.length,
+        grandTotal: reportData.reduce((sum, item) => sum + item.totalAmount, 0)
+      };
+    } catch (error) {
+      console.error('Ошибка генерации сводного отчета:', error);
+      showAlert('error', 'Ошибка при генерации сводного отчета');
+      return null;
+    }
+  };
+
+  // Экспорт сводного отчета
+  const exportSummaryReport = (dateFrom: string, dateTo: string, format: 'csv' | 'excel') => {
+    const reportData = generateSummaryReport(dateFrom, dateTo);
+    if (!reportData || reportData.data.length === 0) {
+      showAlert('error', 'Нет данных для генерации отчета за выбранный период');
+      return;
+    }
+
+    // Формируем данные для экспорта
+    const exportData: Record<string, unknown>[] = reportData.data.map((item, index) => ({
+      'Позиция': index + 1,
+      'Наименование товара': item.name,
+      'Категория': item.category,
+      'Количество': item.totalQuantity,
+      'Единица измерения': item.unit,
+      'Цена за единицу (тг)': item.price.toLocaleString('ru-RU'),
+      'Общая сумма (тг)': item.totalAmount.toLocaleString('ru-RU')
+    }));
+
+    // Добавляем итоговую информацию
+    exportData.push(
+      { 'Позиция': '', 'Наименование товара': '', 'Категория': '', 'Количество': '', 'Единица измерения': '', 'Цена за единицу (тг)': '', 'Общая сумма (тг)': '' },
+      { 'Позиция': '', 'Наименование товара': 'ИТОГО ПО ОТЧЕТУ:', 'Категория': '', 'Количество': '', 'Единица измерения': '', 'Цена за единицу (тг)': '', 'Общая сумма (тг)': '' },
+      { 'Позиция': '', 'Наименование товара': `Период: ${reportData.period.from} - ${reportData.period.to}`, 'Категория': '', 'Количество': '', 'Единица измерения': '', 'Цена за единицу (тг)': '', 'Общая сумма (тг)': '' },
+      { 'Позиция': '', 'Наименование товара': `Количество заказов: ${reportData.totalOrders}`, 'Категория': '', 'Количество': '', 'Единица измерения': '', 'Цена за единицу (тг)': '', 'Общая сумма (тг)': '' },
+      { 'Позиция': '', 'Наименование товара': `Уникальных товаров: ${reportData.totalProducts}`, 'Категория': '', 'Количество': '', 'Единица измерения': '', 'Цена за единицу (тг)': '', 'Общая сумма (тг)': '' },
+      { 'Позиция': '', 'Наименование товара': `Общая сумма: ${reportData.grandTotal.toLocaleString('ru-RU')} тг`, 'Категория': '', 'Количество': '', 'Единица измерения': '', 'Цена за единицу (тг)': '', 'Общая сумма (тг)': '' }
+    );
+
+    const csv = createCSV(exportData);
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `summary_report_${timestamp}.${format === 'csv' ? 'csv' : 'xlsx'}`;
+    
+    downloadFile(csv, filename, format);
+    showAlert('success', `Сводный отчет экспортирован: ${reportData.totalProducts} товаров`);
+  };
+
   // Сброс фильтров
   const resetFilters = () => {
     setFilters({
@@ -396,6 +500,16 @@ const OrdersSection: React.FC = () => {
           >
             <Download className="w-4 h-4 mr-2" />
             Экспорт
+          </LoadingButton>
+          
+          <LoadingButton
+            onClick={() => setShowSummaryReportModal(true)}
+            variant="primary"
+            loading={false}
+            disabled={orders.length === 0}
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Сводный отчет
           </LoadingButton>
           
           <LoadingButton
@@ -466,7 +580,7 @@ const OrdersSection: React.FC = () => {
             {/* Сумма заказа */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Сумма заказа (₽)
+                Сумма заказа (тг)
               </label>
               <div className="space-y-2">
                 <input
@@ -605,7 +719,7 @@ const OrdersSection: React.FC = () => {
         </div>
         <div className="bg-green-50 rounded-lg p-3 sm:p-4">
           <div className="text-xl sm:text-2xl font-bold text-green-600">
-            {filteredOrders.reduce((sum, order) => sum + order.total_price, 0).toLocaleString('ru-RU')} ₽
+            {filteredOrders.reduce((sum, order) => sum + order.total_price, 0).toLocaleString('ru-RU')} тг
           </div>
           <div className="text-xs sm:text-sm text-green-600">Общая сумма</div>
         </div>
@@ -697,7 +811,7 @@ const OrdersSection: React.FC = () => {
                       {order.delivery_date}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {order.total_price.toLocaleString('ru-RU')} ₽
+                      {order.total_price.toLocaleString('ru-RU')} тг
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {order.total_items}
@@ -752,10 +866,10 @@ const OrdersSection: React.FC = () => {
                         {item.quantity} {item.unit}
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-900">
-                        {item.price.toLocaleString('ru-RU')} ₽
+                        {item.price.toLocaleString('ru-RU')} тг
                       </td>
                       <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                        {(item.quantity * item.price).toLocaleString('ru-RU')} ₽
+                        {(item.quantity * item.price).toLocaleString('ru-RU')} тг
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-500">
                         {item.comment || '-'}
@@ -821,6 +935,119 @@ const OrdersSection: React.FC = () => {
               Файл будет содержать детальную информацию по каждой позиции заказов 
               с учетом выбранных фильтров.
             </p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Модальное окно сводного отчета */}
+      <Modal
+        isOpen={showSummaryReportModal}
+        onClose={() => setShowSummaryReportModal(false)}
+        title="Сводный отчет по товарам"
+      >
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              Создайте сводный отчет по товарам за выбранный период. 
+              Отчет покажет общее количество и сумму для каждого товара.
+            </p>
+            
+            {/* Выбор периода */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Дата с:
+                </label>
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Дата по:
+                </label>
+                <input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Предпросмотр отчета */}
+            {(() => {
+              const reportPreview = generateSummaryReport(filters.dateFrom, filters.dateTo);
+              if (reportPreview && reportPreview.data.length > 0) {
+                return (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium mb-3">Предпросмотр отчета:</h4>
+                    <div className="text-sm text-gray-600 space-y-1 mb-3">
+                      <div>Период: {reportPreview.period.from} - {reportPreview.period.to}</div>
+                      <div>Заказов: {reportPreview.totalOrders}</div>
+                      <div>Уникальных товаров: {reportPreview.totalProducts}</div>
+                      <div className="font-semibold">Общая сумма: {reportPreview.grandTotal.toLocaleString('ru-RU')} тг</div>
+                    </div>
+                    
+                    {/* Топ 5 товаров */}
+                    <div className="max-h-40 overflow-y-auto">
+                      <div className="text-xs font-medium text-gray-700 mb-2">Топ товары по сумме:</div>
+                      {reportPreview.data.slice(0, 5).map((item, index) => (
+                        <div key={index} className="flex justify-between text-xs text-gray-600 py-1">
+                          <span className="truncate flex-1 mr-2">{item.name}</span>
+                          <span className="text-nowrap">
+                            {item.totalQuantity} {item.unit} × {item.price.toLocaleString('ru-RU')} = {item.totalAmount.toLocaleString('ru-RU')} тг
+                          </span>
+                        </div>
+                      ))}
+                      {reportPreview.data.length > 5 && (
+                        <div className="text-xs text-gray-500 pt-1">
+                          ... и еще {reportPreview.data.length - 5} товаров
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div className="bg-yellow-50 rounded-lg p-4">
+                  <p className="text-yellow-700 text-sm">
+                    Нет данных за выбранный период. Выберите другие даты или оставьте поля пустыми для всего периода.
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* Кнопки экспорта */}
+            <div className="flex gap-3">
+              <LoadingButton
+                onClick={() => {
+                  exportSummaryReport(filters.dateFrom, filters.dateTo, 'csv');
+                  setShowSummaryReportModal(false);
+                }}
+                variant="secondary"
+                loading={false}
+                disabled={!generateSummaryReport(filters.dateFrom, filters.dateTo)?.data.length}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                CSV файл
+              </LoadingButton>
+              <LoadingButton
+                onClick={() => {
+                  exportSummaryReport(filters.dateFrom, filters.dateTo, 'excel');
+                  setShowSummaryReportModal(false);
+                }}
+                variant="primary"
+                loading={false}
+                disabled={!generateSummaryReport(filters.dateFrom, filters.dateTo)?.data.length}
+              >
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Excel файл
+              </LoadingButton>
+            </div>
           </div>
         </div>
       </Modal>

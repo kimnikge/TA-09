@@ -586,7 +586,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-sm text-gray-600">Общая сумма:</span>
-                  <span className="text-lg font-bold text-blue-600">{getTotalPrice().toLocaleString()} ₸</span>
+                  <span className="text-lg font-bold text-blue-600">{getTotalPrice().toLocaleString()} тг</span>
                 </div>
               </div>
 
@@ -617,7 +617,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                                 {product.name}
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
-                                {product.price.toLocaleString()} ₸ за {product.unit || 'шт'}
+                                {product.price.toLocaleString()} тг за {product.unit || 'шт'}
                               </div>
                             </div>
                             <div className="col-span-3 flex flex-col items-center gap-2">
@@ -672,12 +672,12 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                             </div>
                             <div className="col-span-2 text-right self-center">
                               <div className="font-medium">
-                                {product.price.toLocaleString()} ₸
+                                {product.price.toLocaleString()} тг
                               </div>
                             </div>
                             <div className="col-span-2 text-right self-center">
                               <div className="font-bold text-blue-600">
-                                {itemTotal.toLocaleString()} ₸
+                                {itemTotal.toLocaleString()} тг
                               </div>
                             </div>
                           </div>
@@ -690,7 +690,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                       <div className="col-span-8">ИТОГО:</div>
                       <div className="col-span-2 text-right">{getTotalItems()} шт</div>
                       <div className="col-span-2 text-right text-blue-600">
-                        {getTotalPrice().toLocaleString()} ₸
+                        {getTotalPrice().toLocaleString()} тг
                       </div>
                     </div>
                   </div>

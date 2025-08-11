@@ -175,7 +175,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
                           {product.category}
                         </span>
                         <span className="text-gray-600 font-medium">
-                          {product.price.toLocaleString('ru-RU')} ₸ / {product.unit || 'шт'}
+                          {product.price.toLocaleString('ru-RU')} тг / {product.unit || 'шт'}
                         </span>
                       </div>
                     </div>
