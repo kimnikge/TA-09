@@ -1,7 +1,25 @@
+// Полифиллы для лучшей поддержки Android браузеров
+import 'core-js/stable';
+
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
+
+// Обработка ошибок для Android
+window.addEventListener('error', (event) => {
+  console.error('Global error caught:', event.error);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+});
+
+// Проверка совместимости с Android
+const isAndroid = /Android/.test(navigator.userAgent);
+if (isAndroid) {
+  console.log('Android device detected, applying compatibility fixes');
+}
 
 // Инициализируем систему логирования в dev режиме
 if (import.meta.env.DEV) {

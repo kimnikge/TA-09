@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import 'core-js/stable'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -27,16 +28,22 @@ export default defineConfig({
     }
   },
   build: {
-    target: ['safari11', 'es2017'],
+    target: ['es2015', 'chrome61', 'safari11', 'firefox60', 'edge79'], // Расширенная поддержка браузеров
     modulePreload: {
       polyfill: true
     },
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Удаляем console.log в продакшене
+        drop_console: false, // Оставляем console для отладки на Android
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.warn'] // Удаляем логи
+        ecma: 2015, // ES2015 для лучшей совместимости
+      },
+      mangle: {
+        safari10: true
+      },
+      format: {
+        safari10: true
       }
     },
     rollupOptions: {
