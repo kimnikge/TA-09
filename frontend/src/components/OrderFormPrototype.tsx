@@ -101,6 +101,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
         }
 
         // Загружаем только активные товары
+        console.log('🔍 OrderForm: Начинаем загрузку товаров...');
         const { data: productsData, error: productsError } = await supabase
           .from('products')
           .select('*')
@@ -108,10 +109,14 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
           .order('category', { ascending: true })
           .order('name', { ascending: true });
 
+        console.log('📦 OrderForm: Товары из БД:', productsData);
+        console.log('❌ OrderForm: Ошибка загрузки товаров:', productsError);
+
         if (productsError) {
-          console.error('Ошибка загрузки товаров:', productsError);
+          console.error('❌ OrderForm: Ошибка загрузки товаров:', productsError);
           setProducts([]);
         } else {
+          console.log(`✅ OrderForm: Загружено товаров: ${(productsData || []).length}`);
           setProducts(productsData || []);
         }
 

@@ -141,6 +141,7 @@ const OrdersSection: React.FC = () => {
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('🔍 OrdersSection: Начинаем загрузку заказов...');
 
       // Загружаем заказы
       const { data: ordersData, error: ordersError } = await supabase
@@ -148,7 +149,15 @@ const OrdersSection: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (ordersError) throw ordersError;
+      console.log('📦 OrdersSection: Заказы из БД:', ordersData);
+      console.log('❌ OrdersSection: Ошибка загрузки заказов:', ordersError);
+
+      if (ordersError) {
+        console.error('❌ OrdersSection: Ошибка загрузки заказов:', ordersError);
+        throw ordersError;
+      }
+      
+      console.log(`✅ OrdersSection: Загружено заказов: ${(ordersData || []).length}`);
       setOrders(ordersData || []);
 
       // Загружаем связанные данные
@@ -228,6 +237,10 @@ const OrdersSection: React.FC = () => {
   }, [loadOrders]);
 
   // Фильтрация заказов
+  // Добавляем логирование для отладки
+  console.log('🎯 OrdersSection: Всего заказов в state:', orders.length);
+  console.log('🎯 OrdersSection: Заказы:', orders);
+
   const filteredOrders = orders.filter(order => {
     // Фильтр по датам
     if (filters.dateFrom && new Date(order.created_at) < new Date(filters.dateFrom)) {
@@ -269,6 +282,10 @@ const OrdersSection: React.FC = () => {
 
     return true;
   });
+
+  // Логируем результат фильтрации
+  console.log('🎯 OrdersSection: После фильтрации заказов:', filteredOrders.length);
+  console.log('🎯 OrdersSection: Отфильтрованные заказы:', filteredOrders);
 
   // Экспорт данных
   const exportOrders = async (format: 'csv' | 'excel') => {

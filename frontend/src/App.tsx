@@ -111,18 +111,28 @@ function App() {
     // ЭКСТРЕМАЛЬНАЯ ОПТИМИЗАЦИЯ ДЛЯ ANDROID: немедленный показ UI
     if (isAndroid()) {
       setLoading(false)
+      console.log('📱 App.tsx: Android режим - быстрая загрузка');
+      
       // Сразу пытаемся получить пользователя без задержек
       supabase.auth.getUser().then(({ data: { user } }) => {
+        console.log('👤 App.tsx: Android - пользователь получен:', user?.email);
         setUser(user)
         if (user) {
           // Получаем роль И статус одобрения в фоне без блокировки
           supabase.from('profiles').select('role, approved').eq('id', user.id).single()
-            .then(({ data }) => {
-              setUserRole(data?.role || 'sales_rep')
+            .then(({ data, error }) => {
+              console.log('📋 App.tsx: Android - профиль:', data);
+              console.log('❌ App.tsx: Android - ошибка:', error);
+              
+              const finalRole = data?.role === 'admin' ? 'admin' : 'sales_rep';
+              console.log(`🎯 App.tsx: Android - устанавливаем роль: ${finalRole}`);
+              
+              setUserRole(finalRole)
               setUserApproved(data?.approved ?? true) // По умолчанию одобрен для старых записей
             })
         }
       }).catch(() => {
+        console.log('❌ App.tsx: Android - ошибка получения пользователя');
         setUser(null)
         setUserRole('sales_rep')
         setUserApproved(true)
@@ -140,6 +150,8 @@ function App() {
     const getUserAndRole = async (currentUser: User | null) => {
       if (currentUser) {
         try {
+          console.log('🔍 App.tsx: Получаем роль для пользователя:', currentUser.email);
+          
           // Проверить роль пользователя И статус одобрения в таблице profiles
           const { data: profile, error } = await supabase
             .from('profiles')
@@ -147,26 +159,31 @@ function App() {
             .eq('id', currentUser.id)
             .single()
           
+          console.log('📋 App.tsx: Профиль из БД:', profile);
+          console.log('❌ App.tsx: Ошибка профиля:', error);
+          
           if (error) {
+            console.log('⚠️ App.tsx: Ошибка получения профиля, устанавливаем sales_rep');
             setUserRole('sales_rep') // Роль по умолчанию
             setUserApproved(true) // По умолчанию одобрен для совместимости
             return
           }
           
           // Устанавливаем роль
-          if (profile?.role === 'admin') {
-            setUserRole('admin')
-          } else {
-            setUserRole('sales_rep')
-          }
+          const finalRole = profile?.role === 'admin' ? 'admin' : 'sales_rep';
+          console.log(`🎯 App.tsx: Устанавливаем роль: ${finalRole} (из БД: ${profile?.role})`);
+          
+          setUserRole(finalRole);
           
           // Устанавливаем статус одобрения
           const approved = profile?.approved ?? true // По умолчанию одобрен для старых записей
           setUserApproved(approved)
-        } catch {
+        } catch (err) {
+          console.error('❌ App.tsx: Исключение при получении роли:', err);
           setUserRole('sales_rep')
         }
       } else {
+        console.log('❌ App.tsx: Нет пользователя, устанавливаем sales_rep');
         setUserRole('sales_rep')
       }
     }
