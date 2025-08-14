@@ -468,14 +468,14 @@ function App() {
           {!isDemo && currentPage === 'products' && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Каталог товаров</h2>
-              <OrderPage currentUser={currentUser} userRole={userRole} />
+              <OrderPage currentUser={currentUser} />
             </div>
           )}
           
           {!isDemo && currentPage === 'clients' && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Управление клиентами</h2>
-              <ClientsPage currentUser={currentUser} userRole={userRole} />
+              <ClientsPage currentUser={currentUser} />
             </div>
           )}
 
