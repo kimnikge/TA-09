@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+  "predev": "npm run kill-ports",
     "dev": "vite",
     "dev:clean": "npm run kill-ports && npm run dev",
     "build": "npx tsc -b && vite build",

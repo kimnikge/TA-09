@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Package, User, ShoppingCart, ArrowRight } from 'lucide-react';
 import ProductSearch from './ProductSearch';
 import ClientsManagerBeautiful from './ClientsManagerBeautiful';
-import CompactProductCard from './CompactProductCard';
+import ProductCardV2 from './ProductCardV2';
 import { supabase } from '../supabaseClient';
+import { log } from '../utils/logger';
+import AlertMessage from './common/AlertMessage';
 
 type Step = 'products' | 'client' | 'cart';
 
@@ -40,16 +42,12 @@ interface ThreeStepOrderWrapperProps {
 interface ProductCatalogStepProps {
   cart: { [key: string]: number };
   setCart: React.Dispatch<React.SetStateAction<{ [key: string]: number }>>;
-  comments: { [key: string]: string };
-  setComments: React.Dispatch<React.SetStateAction<{ [key: string]: string }>>;
   allProducts: Product[];
 }
 
 const ProductCatalogStep: React.FC<ProductCatalogStepProps> = ({ 
   cart, 
   setCart, 
-  comments, 
-  setComments, 
   allProducts 
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -233,7 +231,7 @@ const ProductCatalogStep: React.FC<ProductCatalogStepProps> = ({
         </div>
       </div>
 
-      {/* Товары - компактные карточки */}
+      {/* Товары - одна карточка в строке, на всю ширину */}
       {!selectedCategory ? (
         <div className="text-center py-12">
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -241,21 +239,14 @@ const ProductCatalogStep: React.FC<ProductCatalogStepProps> = ({
           <p className="text-gray-400">Нажмите на одну из категорий выше, чтобы просмотреть товары</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-1">
+        <div className="grid grid-cols-1 gap-3 max-h-[70vh] overflow-y-auto p-1">
           {currentProducts.map((product: Product) => (
-            <CompactProductCard
+            <ProductCardV2
               key={product.id}
               product={product}
               quantity={cart[product.id] || 0}
-              comment={comments[product.id] || ''}
               onQuantityChange={updateQuantity}
               onQuantitySet={setQuantityDirectly}
-              onCommentChange={(productId, comment) => 
-                setComments(prev => ({ ...prev, [productId]: comment }))
-              }
-              onImageClick={(imageUrl) => {
-                console.log('Клик по изображению:', imageUrl);
-              }}
             />
           ))}
         </div>
@@ -316,9 +307,11 @@ interface OrderSummaryStepProps {
   products: Product[];
   selectedClient: Client | null;
   onSubmitOrder: () => void;
+  onQuantityChange: (productId: string, delta: number) => void;
+  onQuantitySet: (productId: string, value: string) => void;
 }
 
-const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({ cart, comments, products, selectedClient, onSubmitOrder }) => {
+const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({ cart, comments, products, selectedClient, onSubmitOrder, onQuantityChange, onQuantitySet }) => {
   const cartItems = Object.entries(cart).map(([productId, quantity]) => {
     const product = products.find(p => p.id === productId);
     return product ? { product, quantity, comment: comments[productId] || '' } : null;
@@ -339,17 +332,45 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({ cart, comments, pro
           {cartItems.length > 0 ? (
             <div className="space-y-2">
               {cartItems.map((item) => (
-                <div key={item!.product.id} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{item!.product.name}</p>
-                    <p className="text-sm text-gray-500">{item!.product.price.toLocaleString('ru-RU')} тг за {item!.product.unit || 'шт'}</p>
-                    {item!.comment && (
-                      <p className="text-sm text-blue-600 italic">Комментарий: {item!.comment}</p>
-                    )}
+                <div key={item!.product.id} className="py-3 border-b border-gray-200 last:border-b-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 break-words">{item!.product.name}</p>
+                      <p className="text-sm text-gray-500">{item!.product.price.toLocaleString('ru-RU')} тг за {item!.product.unit || 'шт'}</p>
+                      {item!.comment && (
+                        <p className="text-sm text-blue-600 italic truncate">Комментарий: {item!.comment}</p>
+                      )}
+                    </div>
+                    <div className="text-right whitespace-nowrap">
+                      <p className="text-sm text-gray-600">{(item!.product.price * item!.quantity).toLocaleString('ru-RU')} тг</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">{item!.quantity} {item!.product.unit || 'шт'}</p>
-                    <p className="text-sm text-gray-600">{(item!.product.price * item!.quantity).toLocaleString('ru-RU')} тг</p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <button
+                      onClick={() => onQuantityChange(item!.product.id, -1)}
+                      className={`w-9 h-9 rounded-full flex items-center justify-center transition ${item!.quantity > 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                      disabled={item!.quantity <= 0}
+                      aria-label="Уменьшить количество"
+                    >
+                      –
+                    </button>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min="0"
+                      value={item!.quantity}
+                      onChange={(e) => onQuantitySet(item!.product.id, e.target.value)}
+                      className="w-24 text-center text-base font-bold border-2 border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      aria-label="Количество"
+                    />
+                    <button
+                      onClick={() => onQuantityChange(item!.product.id, 1)}
+                      className="w-9 h-9 rounded-full bg-green-500 text-white flex items-center justify-center transition"
+                      aria-label="Увеличить количество"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
               ))}
@@ -399,12 +420,11 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({ cart, comments, pro
 
 const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUser }) => {
   const [currentStep, setCurrentStep] = useState<Step>('products');
-  
-  // Общие состояния для всех шагов
   const [globalCart, setGlobalCart] = useState<{ [key: string]: number }>({});
   const [globalComments, setGlobalComments] = useState<{ [key: string]: string }>({});
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [notice, setNotice] = useState<{type: 'success'|'error'|'warning'|'info'; message: string} | null>(null);
 
   // Функция для обработки выбора клиента
   const handleClientSelect = (client: Client) => {
@@ -414,7 +434,7 @@ const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUs
   // Функция для отправки заказа
   const handleSubmitOrder = async () => {
     if (!selectedClient || Object.keys(globalCart).length === 0) {
-      alert('Невозможно отправить заказ: нет выбранного клиента или товаров в корзине');
+      setNotice({ type: 'warning', message: 'Выберите клиента и добавьте товары в корзину' });
       return;
     }
 
@@ -434,8 +454,8 @@ const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUs
         };
       });
 
-      const totalAmount = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const totalItemsCount = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+      const totalAmount = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
+      const totalItemsCount = orderItems.reduce((s, i) => s + i.quantity, 0);
 
       // Создаем заказ в базе данных
       const { data: orderData, error: orderError } = await supabase
@@ -453,25 +473,42 @@ const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUs
         .single();
 
       if (orderError) {
-        console.error('Ошибка при создании заказа:', orderError);
-        alert('Ошибка при отправке заказа: ' + orderError.message);
+        log.error('Ошибка при создании заказа', { message: orderError.message });
+        setNotice({ type: 'error', message: 'Ошибка при отправке заказа' });
         return;
       }
 
-      // TODO: Нужно добавить сохранение товаров заказа в таблицу order_items
-      // Для этого нужно проверить структуру таблицы order_items
-      console.log('Товары заказа для сохранения:', orderItems);
+      // Сохраняем позиции заказа
+      const itemsToInsert = orderItems.map(item => ({
+        order_id: orderData!.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price: item.price,
+        unit: item.unit,
+        comment: item.comment
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(itemsToInsert);
+
+      if (itemsError) {
+        log.error('Ошибка добавления позиций заказа', { message: itemsError.message });
+        // откат: удаляем созданный заказ
+        await supabase.from('orders').delete().eq('id', orderData!.id);
+        setNotice({ type: 'error', message: 'Ошибка при сохранении позиций заказа' });
+        return;
+      }
 
       // Очищаем корзину и сбрасываем состояние
       setGlobalCart({});
       setGlobalComments({});
       setSelectedClient(null);
       setCurrentStep('products');
-
-      alert(`Заказ успешно отправлен! ID заказа: ${orderData.id}`);
+      setNotice({ type: 'success', message: `Заказ успешно отправлен` });
     } catch (error) {
-      console.error('Ошибка при отправке заказа:', error);
-      alert('Произошла ошибка при отправке заказа');
+      log.error('Исключение при отправке заказа', error instanceof Error ? { message: error.message, stack: error.stack } : String(error));
+      setNotice({ type: 'error', message: 'Произошла ошибка при отправке заказа' });
     }
   };
 
@@ -500,6 +537,12 @@ const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUs
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* notice */}
+      {notice && (
+        <div className="max-w-7xl mx-auto p-4">
+          <AlertMessage type={notice.type} message={notice.message} onClose={() => setNotice(null)} />
+        </div>
+      )}
       {/* Прогресс-бар */}
       <div className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -559,8 +602,6 @@ const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUs
           <ProductCatalogStep 
             cart={globalCart}
             setCart={setGlobalCart}
-            comments={globalComments}
-            setComments={setGlobalComments}
             allProducts={products}
           />
         )}
@@ -579,6 +620,28 @@ const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUs
             products={products}
             selectedClient={selectedClient}
             onSubmitOrder={handleSubmitOrder}
+            onQuantityChange={(productId, delta) => {
+              setGlobalCart(prev => {
+                const nextQty = (prev[productId] || 0) + delta;
+                if (nextQty <= 0) {
+                  const clone = { ...prev };
+                  delete clone[productId];
+                  return clone;
+                }
+                return { ...prev, [productId]: nextQty };
+              });
+            }}
+            onQuantitySet={(productId, value) => {
+              const qty = parseInt(value) || 0;
+              setGlobalCart(prev => {
+                if (qty <= 0) {
+                  const clone = { ...prev };
+                  delete clone[productId];
+                  return clone;
+                }
+                return { ...prev, [productId]: qty };
+              });
+            }}
           />
         )}
       </div>

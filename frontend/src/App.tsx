@@ -10,6 +10,7 @@ const AdminAccess = lazy(() => import('./admin/AdminAccess').then(module => ({ d
 const OrderPage = lazy(() => import('./pages/OrderPage'))
 const ClientsPage = lazy(() => import('./pages/ClientsPage'))
 const ThreeStepOrderWrapper = lazy(() => import('./components/ThreeStepOrderWrapper'))
+// demo page удалена
 
 // Улучшенный компонент загрузки
 const LoadingSpinner = memo(({ message = 'Загрузка...' }: { message?: string }) => (
@@ -218,7 +219,10 @@ function App() {
     return <InstantSkeleton />
   }
 
-  if (!user) {
+  // Демо-режим отключён
+  const isDemo = false
+
+  if (!user && !isDemo) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full space-y-8 p-8">
@@ -454,27 +458,28 @@ function App() {
       {/* Основное содержимое */}
       <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
         <Suspense fallback={<LoadingSpinner />}>
+          {/* demo removed */}
           {/* По умолчанию показываем 3-шаговый процесс */}
-          {currentPage === 'threestep' && (
+          {!isDemo && currentPage === 'threestep' && (
             <ThreeStepOrderWrapper currentUser={currentUser} />
           )}
 
           {/* Отдельные страницы из бургер-меню */}
-          {currentPage === 'products' && (
+          {!isDemo && currentPage === 'products' && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Каталог товаров</h2>
               <OrderPage currentUser={currentUser} userRole={userRole} />
             </div>
           )}
           
-          {currentPage === 'clients' && (
+          {!isDemo && currentPage === 'clients' && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Управление клиентами</h2>
               <ClientsPage currentUser={currentUser} userRole={userRole} />
             </div>
           )}
 
-          {currentPage === 'cart' && (
+          {!isDemo && currentPage === 'cart' && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Корзина заказов</h2>
               <div className="bg-white rounded-lg shadow-sm p-6">
@@ -491,7 +496,7 @@ function App() {
             </div>
           )}
           
-          {currentPage === 'admin' && userRole === 'admin' && (
+          {!isDemo && currentPage === 'admin' && userRole === 'admin' && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Административная панель</h2>
               <AdminAccess />

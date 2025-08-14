@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { log } from '../utils/logger';
 
 interface ImageUploadProps {
   currentImageUrl?: string;
@@ -57,7 +58,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
       return urlData.publicUrl;
     } catch (error) {
-      console.error('Ошибка загрузки изображения:', error);
+      log.error('Ошибка загрузки изображения', error instanceof Error ? { message: error.message, stack: error.stack } : String(error));
       setError(error instanceof Error ? error.message : 'Ошибка загрузки изображения');
       return null;
     } finally {
@@ -79,10 +80,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         .remove([filePath]);
 
       if (error) {
-        console.error('Ошибка удаления изображения:', error);
+        const payload: Record<string, unknown> = { name: error.name, message: error.message };
+        // @ts-expect-error optional vendor field
+        if (error.statusCode) payload.statusCode = error.statusCode;
+        log.error('Ошибка удаления изображения', payload);
       }
     } catch (error) {
-      console.error('Ошибка удаления изображения:', error);
+      log.error('Ошибка удаления изображения', error instanceof Error ? { message: error.message, stack: error.stack } : String(error));
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import type { ReactNode } from 'react';
+import { log } from '../utils/logger';
 
 interface Props {
   children: ReactNode;
@@ -21,12 +22,8 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('❌ ErrorBoundary поймал ошибку:', error, errorInfo);
-    
-    // Отправляем информацию об ошибке в консоль для отладки
-    console.log('🔍 Детали ошибки:', {
-      message: error.message,
-      stack: error.stack,
+    log.error('ErrorBoundary: поймано исключение', { message: error.message, stack: error.stack });
+    log.error('ErrorBoundary: детали', {
       componentStack: errorInfo.componentStack,
       url: window.location.href,
       userAgent: navigator.userAgent,

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
+import { log } from '../utils/logger';
 
 interface Product {
   id: string;
@@ -45,7 +46,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
 
   // Обработка выбора товара
   const handleProductSelect = (product: Product) => {
-    console.log('ProductSearch: выбран товар', product.name);
+    log.ui('ProductSearch: выбран товар', { name: product.name, id: product.id });
     onProductSelect(product);
     setSearchTerm('');
     setIsOpen(false);

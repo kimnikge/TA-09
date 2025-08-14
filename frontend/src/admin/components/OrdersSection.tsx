@@ -807,93 +807,99 @@ const OrdersSection: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          #{order.id.slice(-8)}
+                  <React.Fragment key={order.id}>
+                    <tr className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            #{order.id.slice(-8)}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(order.created_at).toLocaleDateString('ru-RU')}
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {new Date(order.created_at).toLocaleDateString('ru-RU')}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {clients[order.client_id]?.name || 'Неизвестен'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {profiles[order.rep_id]?.name || 'Неизвестен'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.delivery_date}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {order.total_price.toLocaleString('ru-RU')} тг
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.total_items}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <LoadingButton
-                        onClick={() => setSelectedOrder(selectedOrder === order.id ? null : order.id)}
-                        variant="secondary"
-                        loading={false}
-                      >
-                        {selectedOrder === order.id ? 'Скрыть' : 'Детали'}
-                      </LoadingButton>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Детали заказа */}
-      {selectedOrder && orderItems[selectedOrder] && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium mb-4">
-            Детали заказа #{selectedOrder.slice(-8)}
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Товар</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Категория</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Кол-во</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Цена</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Сумма</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Комментарий</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {orderItems[selectedOrder].map((item) => {
-                  const product = products[item.product_id];
-                  return (
-                    <tr key={item.id}>
-                      <td className="px-4 py-2 text-sm text-gray-900">
-                        {product?.name || item.product_name || 'Неизвестен'}
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-500">
-                        {product?.category || '-'}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {clients[order.client_id]?.name || 'Неизвестен'}
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-900">
-                        {item.quantity} {item.unit}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {profiles[order.rep_id]?.name || 'Неизвестен'}
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-900">
-                        {item.price.toLocaleString('ru-RU')} тг
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.delivery_date}
                       </td>
-                      <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                        {(item.quantity * item.price).toLocaleString('ru-RU')} тг
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {order.total_price.toLocaleString('ru-RU')} тг
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-500">
-                        {item.comment || '-'}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.total_items}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <LoadingButton
+                          onClick={() => setSelectedOrder(selectedOrder === order.id ? null : order.id)}
+                          variant="secondary"
+                          loading={false}
+                        >
+                          {selectedOrder === order.id ? 'Скрыть' : 'Детали'}
+                        </LoadingButton>
                       </td>
                     </tr>
-                  );
-                })}
+                    
+                    {/* Детали заказа - отображаются под выбранным заказом */}
+                    {selectedOrder === order.id && orderItems[order.id] && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-4 bg-gray-50">
+                          <div className="space-y-4">
+                            <h4 className="text-md font-medium text-gray-900">
+                              Детали заказа #{order.id.slice(-8)}
+                            </h4>
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full divide-y divide-gray-200 bg-white rounded border">
+                                <thead className="bg-gray-100">
+                                  <tr>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Товар</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Категория</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Кол-во</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Цена</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Сумма</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Комментарий</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                  {orderItems[order.id].map((item) => {
+                                    const product = products[item.product_id];
+                                    return (
+                                      <tr key={item.id}>
+                                        <td className="px-4 py-2 text-sm text-gray-900">
+                                          {product?.name || item.product_name || 'Неизвестен'}
+                                        </td>
+                                        <td className="px-4 py-2 text-sm text-gray-500">
+                                          {product?.category || '-'}
+                                        </td>
+                                        <td className="px-4 py-2 text-sm text-gray-900">
+                                          {item.quantity} {item.unit}
+                                        </td>
+                                        <td className="px-4 py-2 text-sm text-gray-900">
+                                          {item.price.toLocaleString('ru-RU')} тг
+                                        </td>
+                                        <td className="px-4 py-2 text-sm font-medium text-gray-900">
+                                          {(item.quantity * item.price).toLocaleString('ru-RU')} тг
+                                        </td>
+                                        <td className="px-4 py-2 text-sm text-gray-500">
+                                          {item.comment || '-'}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
               </tbody>
             </table>
           </div>
