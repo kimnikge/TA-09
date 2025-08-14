@@ -21,7 +21,6 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
     { id: 'products', label: 'Товары', icon: Package },
     { id: 'orders', label: 'Заказы', icon: ShoppingCart },
     { id: 'reports', label: 'Отчёты', icon: FileText },
-    { id: 'tests', label: 'Тесты', icon: FileText },
     { id: 'settings', label: 'Настройки', icon: Settings },
   ];
 

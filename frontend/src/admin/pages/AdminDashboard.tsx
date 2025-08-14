@@ -7,7 +7,6 @@ import ProductsSection from '../components/ProductsSection';
 import OrdersSection from '../components/OrdersSection';
 import ReportsSection from '../components/ReportsSection';
 import SettingsSection from '../components/SettingsSection';
-import UserManagementTestSection from '../components/UserManagementTestSection';
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('users');
@@ -75,7 +74,6 @@ const AdminDashboard: React.FC = () => {
           {activeTab === 'products' && <ProductsSection />}
           {activeTab === 'orders' && <OrdersSection />}
           {activeTab === 'reports' && <ReportsSection />}
-          {activeTab === 'tests' && <UserManagementTestSection />}
           {activeTab === 'settings' && <SettingsSection />}
         </div>
       </main>
