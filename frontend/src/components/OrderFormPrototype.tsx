@@ -478,24 +478,54 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
               </div>
               
               {/* Категории */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {categories.map(category => (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      selectedCategory === category.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {category.name}
-                  </button>
-                ))}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Выберите категорию товаров</h3>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map(category => (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                        selectedCategory === category.id
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                      }`}
+                    >
+                      <span className="text-base">
+                        {category.name.includes('Молочн') && '🥛'}
+                        {category.name.includes('Хлеб') && '🍞'}
+                        {category.name.includes('Мяс') && '🥩'}
+                        {category.name.includes('Овощ') && '🥬'}
+                        {category.name.includes('Фрукт') && '🍎'}
+                        {category.name.includes('Напитк') && '🥤'}
+                        {category.name.includes('Конд') && '🍫'}
+                        {category.name.includes('Рыб') && '🐟'}
+                        {category.name.includes('Алко') && '🍷'}
+                        {(!category.name.includes('Молочн') && 
+                          !category.name.includes('Хлеб') && 
+                          !category.name.includes('Мяс') && 
+                          !category.name.includes('Овощ') && 
+                          !category.name.includes('Фрукт') && 
+                          !category.name.includes('Напитк') && 
+                          !category.name.includes('Конд') && 
+                          !category.name.includes('Рыб') && 
+                          !category.name.includes('Алко')) && '📦'}
+                      </span>
+                      <span>{category.name}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        selectedCategory === category.id
+                          ? 'bg-white/20 text-white'
+                          : 'bg-gray-200 text-gray-500'
+                      }`}>
+                        {products.filter(p => p.category === category.id).length}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Товары - компактные карточки */}
-              <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
+              {/* Товары - квадратные карточки */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-1">
                 {currentProducts.map((product: Product) => (
                   <CompactProductCard
                     key={product.id}
@@ -533,18 +563,34 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Выберите точку продаж
                   </label>
-                  <select 
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={selectedClient}
-                    onChange={(e) => setSelectedClient(e.target.value)}
-                  >
-                    <option value="">Выберите клиента...</option>
-                    {clients.map(client => (
-                      <option key={client.id} value={client.id}>
-                        {client.name} - {client.address}
-                      </option>
-                    ))}
-                  </select>
+                  
+                  {/* Улучшенный селектор клиентов */}
+                  <div className="relative">
+                    <select 
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                      value={selectedClient}
+                      onChange={(e) => setSelectedClient(e.target.value)}
+                    >
+                      <option value="">Выберите клиента...</option>
+                      {clients.map(client => {
+                        // Парсим название для красивого отображения
+                        const nameParts = client.name.split(' - ');
+                        const company = nameParts[0]?.replace(/^(ИП\s*|Компания\s*|ТОО\s*)/i, '').trim() || '';
+                        const shop = nameParts.slice(1).join(' - ') || client.name;
+                        
+                        return (
+                          <option key={client.id} value={client.id}>
+                            {company ? `ИП ${company} - ${shop}` : shop} | {client.address}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 
                 <button 
@@ -556,10 +602,38 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                 </button>
 
                 {selectedClientData && (
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-800">{selectedClientData.name}</h3>
-                    <p className="text-sm text-gray-600">Адрес: {selectedClientData.address}</p>
-                    <p className="text-sm text-gray-600">Адрес: {selectedClientData.address}</p>
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                    <div className="space-y-2">
+                      {/* Извлекаем ИП и магазин */}
+                      {(() => {
+                        const nameParts = selectedClientData.name.split(' - ');
+                        const company = nameParts[0]?.replace(/^(ИП\s*|Компания\s*|ТОО\s*)/i, '').trim();
+                        const shop = nameParts.slice(1).join(' - ') || selectedClientData.name;
+                        
+                        return (
+                          <>
+                            {company && (
+                              <div className="flex items-center">
+                                <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-full mr-2">
+                                  ИП
+                                </span>
+                                <span className="text-sm font-medium text-blue-700">{company}</span>
+                              </div>
+                            )}
+                            <h3 className="font-semibold text-gray-800 text-lg">
+                              Магазин: {shop}
+                            </h3>
+                            <div className="flex items-start text-gray-600">
+                              <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              <span className="text-sm">{selectedClientData.address}</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
@@ -597,10 +671,17 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
 
               {Object.keys(cart).length > 0 && (
                 <div className="mb-4">
-                  <h3 className="text-sm font-semibold mb-3">Товары в заказе:</h3>
-                  <div className="bg-gray-50 rounded-lg overflow-hidden">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package className="text-green-600" size={16} />
+                    <h3 className="text-sm font-semibold">Товары в заказе:</h3>
+                    <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">
+                      {getTotalItems()} шт
+                    </span>
+                  </div>
+                  
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                     {/* Заголовок таблицы */}
-                    <div className="bg-gray-200 px-3 py-2 grid grid-cols-12 gap-2 text-xs font-semibold text-gray-700">
+                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 grid grid-cols-12 gap-3 text-xs font-semibold text-gray-700 border-b border-gray-200">
                       <div className="col-span-5">Наименование</div>
                       <div className="col-span-3 text-center">Количество</div>
                       <div className="col-span-2 text-right">Цена</div>
@@ -616,9 +697,9 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                         const itemTotal = product.price * qty;
                         
                         return (
-                          <div key={productId} className="px-3 py-3 grid grid-cols-12 gap-2 text-xs border-b border-gray-200 last:border-b-0">
+                          <div key={productId} className="px-4 py-3 grid grid-cols-12 gap-3 text-xs border-b border-gray-100 last:border-b-0 hover:bg-gray-25 transition-colors">
                             <div className="col-span-5 flex flex-col">
-                              <div className="truncate font-medium" title={product.name}>
+                              <div className="truncate font-medium text-gray-800" title={product.name}>
                                 {product.name}
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
@@ -630,7 +711,7 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                               <div className="flex items-center gap-2 w-full">
                                 <button 
                                   onClick={() => updateQuantity(productId, -1)}
-                                  className="cart-button w-8 h-8 bg-red-100 hover:bg-red-200 active:bg-red-300 text-red-600 rounded-full text-lg flex items-center justify-center transition-colors touch-manipulation"
+                                  className="cart-button w-7 h-7 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-full text-sm flex items-center justify-center transition-all duration-150 hover:scale-110 shadow-sm"
                                   title="Уменьшить количество"
                                 >
                                   −
@@ -642,16 +723,16 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                                     value={cart[productId] === 0 ? '' : cart[productId]}
                                     onChange={(e) => setQuantityDirectly(productId, e.target.value)}
                                     onBlur={(e) => handleQuantityBlur(productId, e.target.value)}
-                                    className="cart-input w-16 h-8 text-center border-2 border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                    className="cart-input w-14 h-7 text-center border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
                                     min="1"
                                     placeholder="1"
                                   />
-                                  <span className="text-xs text-gray-500 mt-1">{product.unit || 'шт'}</span>
+                                  <span className="text-xs text-gray-400 mt-1">{product.unit || 'шт'}</span>
                                 </div>
                                 
                                 <button 
                                   onClick={() => updateQuantity(productId, 1)}
-                                  className="cart-button w-8 h-8 bg-green-100 hover:bg-green-200 active:bg-green-300 text-green-600 rounded-full text-lg flex items-center justify-center transition-colors touch-manipulation"
+                                  className="cart-button w-7 h-7 bg-green-50 hover:bg-green-100 active:bg-green-200 text-green-600 rounded-full text-sm flex items-center justify-center transition-all duration-150 hover:scale-110 shadow-sm"
                                   title="Увеличить количество"
                                 >
                                   +
@@ -669,19 +750,19 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                                   setAddedProductNotification(`${product.name} удален из корзины`);
                                   setTimeout(() => setAddedProductNotification(null), 3000);
                                 }}
-                                className="cart-button w-20 h-6 bg-red-100 hover:bg-red-200 active:bg-red-300 text-red-600 rounded-full text-xs flex items-center justify-center transition-colors touch-manipulation"
+                                className="cart-button w-16 h-5 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-full text-xs flex items-center justify-center transition-all duration-150 hover:scale-105 shadow-sm"
                                 title="Удалить товар"
                               >
                                 Удалить
                               </button>
                             </div>
                             <div className="col-span-2 text-right self-center">
-                              <div className="font-medium">
+                              <div className="font-medium text-gray-700">
                                 {product.price.toLocaleString()} тг
                               </div>
                             </div>
                             <div className="col-span-2 text-right self-center">
-                              <div className="font-bold text-blue-600">
+                              <div className="font-bold text-green-600 text-sm">
                                 {itemTotal.toLocaleString()} тг
                               </div>
                             </div>
@@ -691,31 +772,74 @@ const OrderFormPrototype: React.FC<OrderFormProps> = ({ currentUser, userRole })
                     </div>
                     
                     {/* Итого */}
-                    <div className="bg-blue-50 px-3 py-3 grid grid-cols-12 gap-2 text-sm font-bold">
-                      <div className="col-span-8">ИТОГО:</div>
-                      <div className="col-span-2 text-right">{getTotalItems()} шт</div>
-                      <div className="col-span-2 text-right text-blue-600">
-                        {getTotalPrice().toLocaleString()} тг
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-4 grid grid-cols-12 gap-3 text-sm border-t border-green-200">
+                      <div className="col-span-8 flex items-center">
+                        <span className="font-bold text-gray-800 text-base">ИТОГО:</span>
+                        <div className="ml-3 flex items-center gap-2">
+                          <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
+                            {getTotalItems()} товаров
+                          </span>
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className="text-gray-600 font-medium">{getTotalItems()} шт</span>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className="font-bold text-green-700 text-lg">
+                          {getTotalPrice().toLocaleString()} тг
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              <button 
-                className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!selectedClient || Object.keys(cart).length === 0 || isSubmitting}
-                onClick={handleSubmitOrder}
-              >
-                <Send size={16} />
-                {isSubmitting ? 'Отправка...' : 'Отправить заявку'}
-              </button>
-              {submitStatus === 'success' && (
-                <div className="text-green-600 text-center mt-2">Заявка успешно отправлена!</div>
-              )}
-              {submitStatus === 'error' && (
-                <div className="text-red-600 text-center mt-2">Ошибка при отправке заявки. Попробуйте еще раз.</div>
-              )}
+              <div className="mt-6 space-y-3">
+                <button 
+                  className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-3 ${
+                    !selectedClient || Object.keys(cart).length === 0 || isSubmitting
+                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95'
+                  }`}
+                  disabled={!selectedClient || Object.keys(cart).length === 0 || isSubmitting}
+                  onClick={handleSubmitOrder}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Отправка заявки...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={20} />
+                      Отправить заявку
+                      {Object.keys(cart).length > 0 && (
+                        <span className="bg-white/20 px-2 py-1 rounded-full text-sm">
+                          {getTotalItems()} товаров
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
+                
+                {/* Статус отправки */}
+                {submitStatus === 'success' && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-center flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Заявка успешно отправлена!
+                  </div>
+                )}
+                {submitStatus === 'error' && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-center flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Ошибка при отправке заявки. Попробуйте еще раз.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

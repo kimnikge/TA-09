@@ -1,5 +1,6 @@
 import React from 'react';
-import ClientsManager from '../components/ClientsManager';
+// import ClientsManager from '../components/ClientsManager';
+import ClientsManagerBeautiful from '../components/ClientsManagerBeautiful';
 
 interface ClientsPageProps {
   currentUser?: {
@@ -10,22 +11,10 @@ interface ClientsPageProps {
   userRole?: 'admin' | 'sales_rep';
 }
 
-const ClientsPage: React.FC<ClientsPageProps> = ({ currentUser, userRole }) => {
-  // Если props не переданы, используем заглушки (для совместимости)
-  const defaultUser = {
-    id: '',
-    name: 'Гость',
-    email: 'guest@example.com'
-  };
-
-  const defaultRole = 'sales_rep' as const;
-
+const ClientsPage: React.FC<ClientsPageProps> = () => {
   return (
     <div className="container mx-auto px-4 py-6">
-      <ClientsManager 
-        currentUser={currentUser || defaultUser}
-        userRole={userRole || defaultRole}
-      />
+      <ClientsManagerBeautiful />
     </div>
   );
 };

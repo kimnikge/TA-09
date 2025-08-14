@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Schema Check</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Проверка схемы базы данных</h1>
+    <div id="results"></div>
+
+    <script>
+        // Замените на ваши настройки Supabase
+        const supabaseUrl = 'https://olutrxiazmanrgzzwmb.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdXRyeGlhem1hbnJnenpwbWIiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcyMzU1MzQ4MCwiZXhwIjoyMDM5MTI5NDgwfQ.HHDojxjP9fgJNiUqN6R6S7h1bNm6k5GGQ69eGSEY3t8' // ваш anon key
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+        
+        const resultsDiv = document.getElementById('results')
+        
+        async function checkTables() {
+            resultsDiv.innerHTML = '<p>Проверяем таблицы...</p>'
+            
+            try {
+                // Проверяем orders
+                console.log('Checking orders table...')
+                const ordersResult = await supabase.from('orders').select('*').limit(1)
+                
+                if (ordersResult.error) {
+                    resultsDiv.innerHTML += `<p><strong>Orders Error:</strong> ${ordersResult.error.message}</p>`
+                } else {
+                    resultsDiv.innerHTML += '<p><strong>Orders table exists!</strong></p>'
+                    if (ordersResult.data && ordersResult.data.length > 0) {
+                        const columns = Object.keys(ordersResult.data[0])
+                        resultsDiv.innerHTML += `<p><strong>Orders columns:</strong> ${columns.join(', ')}</p>`
+                    } else {
+                        resultsDiv.innerHTML += '<p>Orders table is empty - trying to check schema...</p>'
+                        // Попробуем insert с минимальными данными
+                        const testResult = await supabase.from('orders').insert({}).select()
+                        resultsDiv.innerHTML += `<p><strong>Test insert error (shows required fields):</strong> ${testResult.error?.message || 'Success'}</p>`
+                    }
+                }
+                
+                // Проверяем clients
+                const clientsResult = await supabase.from('clients').select('*').limit(1)
+                if (clientsResult.data && clientsResult.data.length > 0) {
+                    const columns = Object.keys(clientsResult.data[0])
+                    resultsDiv.innerHTML += `<p><strong>Clients columns:</strong> ${columns.join(', ')}</p>`
+                }
+                
+                // Проверяем products  
+                const productsResult = await supabase.from('products').select('*').limit(1)
+                if (productsResult.data && productsResult.data.length > 0) {
+                    const columns = Object.keys(productsResult.data[0])
+                    resultsDiv.innerHTML += `<p><strong>Products columns:</strong> ${columns.join(', ')}</p>`
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<p><strong>Error:</strong> ${error.message}</p>`
+            }
+        }
+        
+        checkTables()
+    </script>
+</body>
+</html>

@@ -366,17 +366,14 @@ function App() {
                 {/* Выпадающее меню */}
                 {mobileMenuOpen && (
                   <>
-                    {/* Overlay для мобильных устройств */}
+                    {/* Оверлей для закрытия меню */}
                     <div 
-                      className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden"
+                      className="fixed inset-0 z-40 sm:hidden" 
                       onClick={() => setMobileMenuOpen(false)}
                     ></div>
                     
-                    {/* Само меню */}
-                    <div className="absolute right-0 mt-2 w-48 sm:w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50 
-                                  md:max-w-none md:mr-0
-                                  max-w-[calc(100vw-1rem)] -mr-2
-                                  ">
+                    {/* Меню */}
+                    <div className="absolute right-0 mt-2 w-screen sm:w-56 max-w-xs bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50 sm:max-w-none">
                       <div className="py-1">
                       <button
                         onClick={() => {
