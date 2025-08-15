@@ -44,8 +44,12 @@ const ProductCardV2: React.FC<ProductCardV2Props> = ({ product, quantity, onQuan
           </span>
         </div>
       )}
-      {/* Название товара — всегда одна строка, во всю ширину */}
-      <h3 className="text-base font-semibold text-gray-900 leading-5 truncate w-full" title={product.name}>
+      {/* Название товара — отображается полностью, допускается перенос на 2-3 строки */}
+      <h3
+        className="text-base font-semibold text-gray-900 leading-5 w-full break-words whitespace-normal line-clamp-3"
+        style={{ display: 'block', overflow: 'hidden', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}
+        title={product.name}
+      >
         {product.name}
       </h3>
       {/* Цена и единица */}

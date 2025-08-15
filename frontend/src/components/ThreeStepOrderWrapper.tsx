@@ -553,14 +553,14 @@ const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUs
             {/* Шаг 1: Товары */}
             <button
               onClick={() => setCurrentStep('products')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all max-w-[120px] sm:max-w-none whitespace-normal break-words text-center ${
                 currentStep === 'products'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
               }`}
             >
               <Package className="w-4 h-4" />
-              <span className="font-medium">1. Каталог товаров</span>
+              <span className="font-medium block text-xs sm:text-base leading-tight">1. Каталог товаров</span>
             </button>
 
             <ArrowRight className="w-4 h-4 text-gray-400" />
@@ -568,14 +568,14 @@ const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUs
             {/* Шаг 2: Клиент */}
             <button
               onClick={() => setCurrentStep('client')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all max-w-[120px] sm:max-w-none whitespace-normal break-words text-center ${
                 currentStep === 'client'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
               }`}
             >
               <User className="w-4 h-4" />
-              <span className="font-medium">2. Добавить клиента</span>
+              <span className="font-medium block text-xs sm:text-base leading-tight">2. Добавить клиента</span>
             </button>
 
             <ArrowRight className="w-4 h-4 text-gray-400" />
@@ -583,14 +583,14 @@ const ThreeStepOrderWrapper: React.FC<ThreeStepOrderWrapperProps> = ({ currentUs
             {/* Шаг 3: Корзина */}
             <button
               onClick={() => setCurrentStep('cart')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all max-w-[120px] sm:max-w-none whitespace-normal break-words text-center ${
                 currentStep === 'cart'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
               }`}
             >
               <ShoppingCart className="w-4 h-4" />
-              <span className="font-medium">3. Сводка заказа</span>
+              <span className="font-medium block text-xs sm:text-base leading-tight">3. Сводка заказа</span>
             </button>
           </div>
         </div>
