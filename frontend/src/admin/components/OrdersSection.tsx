@@ -819,8 +819,11 @@ const OrdersSection: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {clients[order.client_id]?.name || 'Неизвестен'}
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div>
+                          <div className="font-medium">{clients[order.client_id]?.name || 'Неизвестен'}</div>
+                          <div className="text-xs text-gray-500">{clients[order.client_id]?.address || ''}</div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {profiles[order.rep_id]?.name || 'Неизвестен'}
